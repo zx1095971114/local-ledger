@@ -1,0 +1,38 @@
+{
+  "name": "local-ledger",
+  "version": "1.0.0",
+  "description": "本地账本桌面应用",
+  "main": "out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "pack": "electron-builder",
+    "dist": "npm run build && electron-builder"
+  },
+  "keywords": [
+    "electron",
+    "vue",
+    "typescript"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@vitejs/plugin-vue": "^5.0.0",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1",
+    "electron-vite": "^2.0.0",
+    "typescript": "^5.3.0",
+    "vite": "^5.0.0",
+    "vue": "^3.4.0",
+    "vue-router": "^4.2.5"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.3.1",
+    "better-sqlite3": "^9.2.2",
+    "element-plus": "^2.5.0",
+    "pinia": "^2.1.7"
+  }
+}
+
