@@ -10,7 +10,7 @@ export default defineConfig(({ command }) => {
 
   const isServe = command === 'serve'
   const isBuild = command === 'build'
-  const sourcemap = isServe || !!process.env.VSCODE_DEBUG
+  const sourcemap = isServe || !!process.env.VSCODE_DEBUG || !!process.env.IDEA_DEBUG
 
   return {
     plugins: [
@@ -20,7 +20,7 @@ export default defineConfig(({ command }) => {
           // Shortcut of `build.lib.entry`
           entry: 'electron/main/index.ts',
           onstart({ startup }) {
-            if (process.env.VSCODE_DEBUG) {
+            if (process.env.VSCODE_DEBUG || process.env.IDEA_DEBUG) {
               console.log(/* For `.vscode/.debug.script.mjs` */'[startup] Electron App')
             } else {
               startup()
@@ -63,7 +63,7 @@ export default defineConfig(({ command }) => {
         renderer: {},
       }),
     ],
-    server: process.env.VSCODE_DEBUG && (() => {
+    server: (process.env.VSCODE_DEBUG || process.env.IDEA_DEBUG) && (() => {
       const url = new URL(pkg.debug.env.VITE_DEV_SERVER_URL)
       return {
         host: url.hostname,

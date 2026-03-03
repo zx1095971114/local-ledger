@@ -12,35 +12,38 @@
 
       <!-- 搜索和筛选区域 -->
       <div class="filter-section">
-        <el-form :inline="true" :model="filterForm">
-          <el-form-item label="日期范围">
-            <el-date-picker
-              v-model="filterForm.dateRange"
-              type="daterange"
-              range-separator="至"
-              start-placeholder="开始日期"
-              end-placeholder="结束日期"
-            />
-          </el-form-item>
-          <el-form-item label="类型">
-            <el-select v-model="filterForm.type" placeholder="请选择" clearable>
-              <el-option label="收入" value="收入" />
-              <el-option label="支出" value="支出" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="类别">
-            <el-input
-              v-model="filterForm.category"
-              placeholder="请输入类别"
-              clearable
-            />
-          </el-form-item>
-          <el-form-item>
+        <el-form :model="filterForm">
+          <div class="filter-row">
+            <el-form-item label="日期范围">
+              <el-date-picker
+                v-model="filterForm.dateRange"
+                type="daterange"
+                range-separator="至"
+                start-placeholder="开始日期"
+                end-placeholder="结束日期"
+              />
+            </el-form-item>
+            <el-form-item label="类型">
+              <el-select v-model="filterForm.type" placeholder="请选择" clearable>
+                <el-option label="收入" value="收入" />
+                <el-option label="支出" value="支出" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="类别">
+              <el-input
+                v-model="filterForm.category"
+                placeholder="请输入类别"
+                clearable
+              />
+            </el-form-item>
+            <div class="filter-placeholder" />
+          </div>
+          <div class="filter-actions">
             <el-button type="primary" :icon="Search" @click="handleSearch">
               搜索
             </el-button>
             <el-button :icon="Refresh" @click="handleReset">重置</el-button>
-          </el-form-item>
+          </div>
         </el-form>
       </div>
 
@@ -221,6 +224,37 @@ onMounted(() => {
   margin-bottom: 20px;
   padding-bottom: 20px;
   border-bottom: 1px solid var(--el-border-color);
+}
+
+.filter-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0 16px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.filter-row > * {
+  min-width: 0;
+}
+
+.filter-row :deep(.el-form-item) {
+  margin-bottom: 0;
+}
+
+.filter-row :deep(.el-form-item__content),
+.filter-row :deep(.el-date-editor) {
+  min-width: 0;
+}
+
+.filter-placeholder {
+  /* 空白占位，保持每行 4 等分，后续新增搜索项可替换或填充 */
+}
+
+.filter-actions {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
 }
 
 .income {

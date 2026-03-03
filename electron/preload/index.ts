@@ -1,4 +1,7 @@
 import { ipcRenderer, contextBridge } from 'electron'
+import {Result} from "../../shared/domain/result";
+import {BillQuery, BillView} from "../../shared/domain/dto";
+import {Page} from "../../shared/domain/page";
 
 // --------- Expose some API to the Renderer process ---------
 contextBridge.exposeInMainWorld('ipcRenderer', {
@@ -21,6 +24,15 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
 
   // You can expose other APTs you need here.
   // ...
+})
+
+contextBridge.exposeInMainWorld('billController', {
+  import: (file: ArrayBuffer): Promise<Result<any>> =>{
+    return ipcRenderer.invoke('bill:import', file)
+  },
+  list: (query: BillQuery): Promise<Result<Page<BillView>>> =>{
+    return ipcRenderer.invoke('bill:list', query)
+  }
 })
 
 // --------- Preload scripts loading ---------

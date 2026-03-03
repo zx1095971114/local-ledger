@@ -6,10 +6,10 @@
  * 账单实体
  */
 export interface Bill {
-  id?: number;
-  date: string; // 日期
-  type: '收入' | '支出'; // 收支类型
-  amount: number; // 金额
+  id?: number | null;
+  date?: Date | null; // 日期
+  type?: '收入' | '支出'; // 收支类型
+  amount?: number | null; // 金额
   category?: string | null; // 类别
   subcategory?: string | null; // 子类
   account?: string | null; // 账户
@@ -24,8 +24,8 @@ export interface Bill {
   discount?: number | null; // 优惠
   other?: string | null; // 其他
   attachments?: string | null; // 附件（JSON数组字符串）
-  created_at?: string; // 创建时间
-  updated_at?: string; // 更新时间
+  created_at?: Date | null; // 创建时间
+  updated_at?: Date | null; // 更新时间
 }
 
 /**

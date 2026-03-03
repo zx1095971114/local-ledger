@@ -24,16 +24,21 @@
     "build": "vue-tsc --noEmit && vite build && electron-builder",
     "preview": "vite preview",
     "postinstall": "electron-builder install-app-deps",
-    "rebuild": "electron-builder install-app-deps"
+    "rebuild": "electron-builder install-app-deps",
+    "electron-debug": "electron --inspect-brk=127.0.0.1:9229 ."
   },
   "dependencies": {
-    "better-sqlite3": "^11.0.0",
-    "element-plus": "^2.8.0",
     "@element-plus/icons-vue": "^2.3.1",
+    "better-sqlite3": "^11.0.0",
+    "dayjs": "^1.11.19",
+    "element-plus": "^2.8.0",
     "pinia": "^2.1.7",
-    "vue-router": "^4.4.0"
+    "vue-router": "^4.4.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^25.3.3",
     "@vitejs/plugin-vue": "^5.0.4",
     "electron": "^29.1.1",
     "electron-builder": "^24.13.3",

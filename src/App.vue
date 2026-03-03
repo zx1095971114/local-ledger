@@ -19,6 +19,7 @@ body {
 
 #app {
   width: 100%;
+  max-width: none;
   height: 100vh;
   overflow: hidden;
 }

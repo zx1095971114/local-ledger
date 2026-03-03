@@ -2,13 +2,13 @@ import { app } from 'electron';
 import { join, dirname } from 'node:path';
 import { existsSync, mkdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import type Database from 'better-sqlite3';
-import { getConfig } from '../config';
+import { getConfig } from '../config/config';
 
 // 使用 createRequire 来导入 better-sqlite3，确保在 ES modules 环境中正确加载
 // 这样可以避免 __filename is not defined 的错误
 const require = createRequire(import.meta.url);
-const BetterSqlite3 = require('better-sqlite3') as typeof Database;
+const BetterSqlite3 = require('better-sqlite3');
+type Database = InstanceType<typeof BetterSqlite3>;
 
 let db: Database | null = null;
 

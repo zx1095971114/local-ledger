@@ -4,8 +4,9 @@ import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import os from 'node:os'
 import http from 'node:http'
-import { loadConfig, getConfig, getConfigValue, getConfigPath } from './config'
+import { loadConfig, getConfig, getConfigValue, getConfigPath } from './config/config'
 import { initDatabase, closeDatabase } from './database/db'
+import './controller/index'
 
 const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
