@@ -4,7 +4,7 @@ import {Page} from "./page";
 interface BillQuery extends Bill{
     dateFrom?: Date;
     dateTo?: Date;
-    pageInfo?: Page
+    pageInfo?: Page<any>
 }
 
 interface BillView extends Bill{

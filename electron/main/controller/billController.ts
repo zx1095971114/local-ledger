@@ -16,7 +16,7 @@ ipcMain.handle("bill:import", (_event, file: ArrayBuffer): result.Result<any> =>
 
 ipcMain.handle("bill:list", (_event, query: BillQuery): result.Result<Page<BillView>> => {
     try {
-        return billService.list(query)
+        return result.ok("查询成功", billService.list(query))
     }catch (e){
         console.log("查询失败", e)
         return result.error(e?.message)

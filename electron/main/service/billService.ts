@@ -8,14 +8,19 @@ import {BillQuery, BillView} from "../../../shared/domain/dto";
 import {Page} from "../../../shared/domain/page";
 
 export function list(query: BillQuery): Page<BillView> {
-
-
+  return billDao.list(query)
 }
 
 
-/** Excel 行数据（表头为中文） */
+/** Excel 日期序列号转 JS Date（Excel 的 1 = 1900-01-01） */
+function excelSerialToDate(serial: number): Date {
+  const utc = (serial - 25569) * 86400 * 1000;
+  return new Date(utc);
+}
+
+/** Excel 行数据（表头为中文）；raw:true 时日期可能是 number(序列号) 或 string，金额为 number */
 interface ExcelBillRow {
-  日期?: string;
+  日期?: string | number;
   收支类型?: string;
   金额?: number;
   类别?: string;
@@ -42,12 +47,12 @@ interface ExcelBillRow {
  * 将 Excel 行数据映射为 Bill 实体
  */
 function mapRowToBill(row: ExcelBillRow): Bill | null {
-  const date = row.日期?.trim();
-  const type = row.收支类型?.trim();
+  const dateRaw = row.日期;
+  const type = typeof row.收支类型 === "string" ? row.收支类型?.trim() : "";
   const amount = row.金额;
 
   // 跳过空行：日期、收支类型、金额任一为空则忽略
-  if (!date || !type || amount == null || isNaN(Number(amount))) {
+  if (dateRaw == null || dateRaw === "" || !type || amount == null || typeof amount !== "number" || isNaN(amount)) {
     return null;
   }
 
@@ -56,25 +61,33 @@ function mapRowToBill(row: ExcelBillRow): Bill | null {
     return null;
   }
 
-  dayjs.extend(customParseFormat)
-  const realDate = dayjs(date, "YYYY-MM-DD HH:mm").toDate()
+  let realDate: Date;
+  if (typeof dateRaw === "number") {
+    realDate = excelSerialToDate(dateRaw);
+  } else {
+    dayjs.extend(customParseFormat);
+    realDate = dayjs(dateRaw.trim(), "YYYY-MM-DD HH:mm").toDate();
+  }
+
+  const numOrNull = (v: unknown): number | null =>
+    v != null && typeof v === "number" && !isNaN(v) ? v : null;
 
   return {
     date: realDate,
     type: type as "收入" | "支出",
-    amount: Number(amount),
+    amount,
     category: row.类别?.trim() || null,
     subcategory: row.子类?.trim() || null,
     account: row.账户?.trim() || null,
     ledger: row.账本?.trim() || null,
     reimbursement_account: row.报销账户?.trim() || null,
-    reimbursement_amount: row.报销金额 != null && !isNaN(Number(row.报销金额)) ? Number(row.报销金额) : null,
-    refund_amount: row.退款金额 != null && !isNaN(Number(row.退款金额)) ? Number(row.退款金额) : null,
+    reimbursement_amount: numOrNull(row.报销金额),
+    refund_amount: numOrNull(row.退款金额),
     note: row.备注?.trim() || null,
     tags: row.标签?.trim() || null,
     address: row.地址?.trim() || null,
     created_user: row.创建用户?.trim() || null,
-    discount: row.优惠 != null && !isNaN(Number(row.优惠)) ? Number(row.优惠) : null,
+    discount: numOrNull(row.优惠),
     other: row.其他?.trim() || null
   };
 }
@@ -84,15 +97,15 @@ function mapRowToBill(row: ExcelBillRow): Bill | null {
  * @param file Excel 文件 buffer（支持 .xls、.xlsx、.csv）
  * @returns 解析后的 Bill 数组，空行和无效行会被过滤
  */
-function importBill(file: ArrayBuffer): result.Result<any>{
+export function importBill(file: ArrayBuffer): result.Result<any>{
   const workbook = XLSX.read(file, { type: "buffer" });
   const sheetName = workbook.SheetNames[0];
   const sheet = workbook.Sheets[sheetName];
 
-  // 使用第一行作为表头，转换为对象数组
+  // raw: true → 数字列保持为 number（金额不会变成 '8,772.46'）；日期列为 Excel 序列号时在 mapRowToBill 中转换
   const rawRows = XLSX.utils.sheet_to_json<ExcelBillRow>(sheet, {
-    raw: false, // 日期等按字符串输出，便于保持格式
-    defval: "", // 空单元格默认空字符串
+    raw: true,
+    defval: "",
   });
   /** 判断值是否为空（null、undefined、空字符串、NaN） */
   const isEmpty = (v: unknown): boolean =>
@@ -130,5 +143,3 @@ function importBill(file: ArrayBuffer): result.Result<any>{
   return result.ok(msg);
 
 }
-
-export {importBill}

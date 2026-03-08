@@ -31,7 +31,9 @@
         </el-menu>
       </el-aside>
       <el-main class="app-main">
-        <router-view />
+        <div class="main-content">
+          <router-view />
+        </div>
       </el-main>
     </el-container>
   </el-container>
@@ -108,7 +110,19 @@ const toggleTheme = () => {
 .app-main {
   background-color: var(--el-bg-color-page);
   padding: 20px;
-  overflow-y: auto;
+  overflow: hidden;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 </style>
 

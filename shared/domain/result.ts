@@ -4,7 +4,7 @@ interface Result<T> {
     data?: T;
 }
 
-function ok(msg?: string, data?: any): Result<any> {
+function ok<T>(msg?: string, data?: T): Result<T> {
     return {
         code: 200,
         msg: msg ?  msg : "操作成功",
@@ -12,7 +12,7 @@ function ok(msg?: string, data?: any): Result<any> {
     };
 }
 
-function error(msg?: string, data?: any): Result<any> {
+function error<T>(msg?: string, data?: T): Result<T> {
     return {
         code: 500,
         msg: msg,
