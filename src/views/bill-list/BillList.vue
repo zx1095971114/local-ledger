@@ -255,11 +255,16 @@ const handleDelete = async (row: any) => {
     await ElMessageBox.confirm('确定要删除这条账单吗？', '提示', {
       type: 'warning'
     })
-    // TODO: 调用删除API
+    const result = await window.billController.delete(row.id);
+    if (result.code !== 200) {
+      throw new Error(result.msg);
+    }
     ElMessage.success('删除成功')
     loadBills()
-  } catch {
-    // 用户取消
+  } catch (error) {
+    if (error !== 'cancel') { // 用户取消时不显示错误
+      ElMessage.error(error instanceof Error ? error.message : '删除失败')
+    }
   }
 }
 

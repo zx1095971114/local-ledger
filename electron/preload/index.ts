@@ -32,6 +32,9 @@ contextBridge.exposeInMainWorld('billController', {
   },
   list: (query: BillQuery): Promise<Result<Page<BillView>>> =>{
     return ipcRenderer.invoke('bill:list', query)
+  },
+  delete: (id: number): Promise<Result<void>> => {
+    return ipcRenderer.invoke('bill:delete', id)
   }
 })
 

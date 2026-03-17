@@ -11,6 +11,10 @@ export function list(query: BillQuery): Page<BillView> {
   return billDao.list(query)
 }
 
+export function deleteBill(id: number): void {
+  billDao.deleteBill(id);
+}
+
 
 /** Excel 日期序列号转 JS Date（Excel 的 1 = 1900-01-01） */
 function excelSerialToDate(serial: number): Date {

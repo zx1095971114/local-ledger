@@ -127,3 +127,12 @@ function handleOrder(orderBy?: Order[]): string{
   return `ORDER BY ${orderColumn}`
 }
 
+export function deleteBill(id: number): void {
+  const db = getDatabase();
+  const stmt = db.prepare("DELETE FROM bills WHERE id = ?");
+  const result = stmt.run(id);
+  if (result.changes === 0) {
+    throw new Error(`未找到 id=${id} 的账单`);
+  }
+}
+

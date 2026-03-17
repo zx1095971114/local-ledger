@@ -22,3 +22,13 @@ ipcMain.handle("bill:list", (_event, query: BillQuery): result.Result<Page<BillV
         return result.error(e?.message)
     }
 })
+
+ipcMain.handle("bill:delete", (_event, id: number): result.Result<void> => {
+    try {
+        billService.deleteBill(id);
+        return result.ok("删除成功");
+    } catch (e) {
+        console.log("删除失败", e)
+        return result.error(e?.message);
+    }
+})

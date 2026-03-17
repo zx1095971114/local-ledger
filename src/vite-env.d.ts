@@ -13,7 +13,8 @@ import {BillView} from "../shared/domain/dto";
 
 interface BillController {
   import: (file: ArrayBuffer) => Promise<Result<any>>,
-  list: (query: BillQuery) => Promise<Result<Page<BillView>>>
+  list: (query: BillQuery) => Promise<Result<Page<BillView>>>,
+  delete: (id: number) => Promise<Result<void>>
 }
 
 declare global {
