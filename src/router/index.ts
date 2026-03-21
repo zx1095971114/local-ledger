@@ -17,6 +17,15 @@ const routes: RouteRecordRaw[] = [
         }
       },
       {
+        path: '/accounts',
+        name: 'AccountManage',
+        component: () => import('../views/accounts/AccountManage.vue'),
+        meta: {
+          title: '账户管理',
+          icon: 'Wallet'
+        }
+      },
+      {
         path: '/statistics',
         name: 'Statistics',
         component: () => import('../views/statistics/Statistics.vue'),

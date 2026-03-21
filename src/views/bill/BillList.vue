@@ -129,15 +129,24 @@
         />
       </div>
     </el-card>
+
+    <BillFormModal
+      v-model="billFormVisible"
+      :mode="billFormMode"
+      :bill-id="billFormBillId"
+      @success="loadBills"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import dayjs from 'dayjs'
 import { Plus, Search, Refresh, Edit, Delete } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox, ElPagination } from 'element-plus'
 import { BillQuery, BillView } from '../../../shared/domain/dto'
+import BillFormModal from '../bill-form/BillFormModal.vue'
 
 /** 日期时间格式化为 yyyy-MM-dd HH:mm:ss */
 const formatDateTime = (value: string | number | Date | null | undefined) => {
@@ -147,15 +156,23 @@ const formatDateTime = (value: string | number | Date | null | undefined) => {
 }
 
 // 筛选表单
+const route = useRoute()
+
 const filterForm = ref({
   dateRange: null as [Date, Date] | null,
   type: '',
-  category: ''
+  category: '',
+  /** 与账户页穿透一致；主进程 list 未按账户筛选前仅作展示与联调预留 */
+  account: ''
 })
 
 // 账单列表
 const billList = ref<BillView[]>([])
 const loading = ref(false)
+
+const billFormVisible = ref(false)
+const billFormMode = ref<'create' | 'update'>('create')
+const billFormBillId = ref<number | null>(null)
 
 // 分页
 const pagination = ref({
@@ -203,7 +220,8 @@ const loadBills = async () => {
       dateFrom: filterForm.value.dateRange?.[0],
       dateTo: filterForm.value.dateRange?.[1],
       type: typeValue === '收入' || typeValue === '支出' ? typeValue : undefined,
-      category: filterForm.value.category
+      category: filterForm.value.category || undefined,
+      account: filterForm.value.account?.trim() || undefined
     }
 
     let result = await window.billController.list(query);
@@ -232,21 +250,51 @@ const handleReset = () => {
   filterForm.value = {
     dateRange: null,
     type: '',
-    category: ''
+    category: '',
+    account: ''
   }
   handleSearch()
 }
 
+function applyAccountFromRouteQuery() {
+  const q = route.query.account
+  if (q === undefined || q === null || q === '') {
+    filterForm.value.account = ''
+    return
+  }
+  const s = typeof q === 'string' ? q : Array.isArray(q) ? (q[0] ?? '') : ''
+  if (!s) {
+    filterForm.value.account = ''
+    return
+  }
+  try {
+    filterForm.value.account = decodeURIComponent(s)
+  } catch {
+    filterForm.value.account = s
+  }
+}
+
+watch(
+  () => route.query.account,
+  () => {
+    applyAccountFromRouteQuery()
+    pagination.value.page = 1
+    loadBills()
+  }
+)
+
 // 添加账单
 const handleAdd = () => {
-  // TODO: 打开添加账单对话框
-  ElMessage.info('添加账单功能开发中')
+  billFormMode.value = 'create'
+  billFormBillId.value = null
+  billFormVisible.value = true
 }
 
 // 编辑账单
-const handleEdit = (row: any) => {
-  // TODO: 打开编辑账单对话框
-  ElMessage.info('编辑账单功能开发中')
+const handleEdit = (row: BillView) => {
+  billFormMode.value = 'update'
+  billFormBillId.value = row.id ?? null
+  billFormVisible.value = true
 }
 
 // 删除账单
@@ -269,6 +317,7 @@ const handleDelete = async (row: any) => {
 }
 
 onMounted(() => {
+  applyAccountFromRouteQuery()
   loadBills()
 })
 </script>
@@ -320,7 +369,7 @@ onMounted(() => {
 
 .filter-row {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 0 16px;
   align-items: center;
   margin-bottom: 12px;
