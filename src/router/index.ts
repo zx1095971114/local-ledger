@@ -10,7 +10,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: '/bills',
         name: 'BillList',
-        component: () => import('../views/bill-list/BillList.vue'),
+        component: () => import('../views/bill/BillList.vue'),
         meta: {
           title: '账单列表',
           icon: 'Document'

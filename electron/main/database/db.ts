@@ -129,27 +129,36 @@ function initTables(database: Database): void {
     CREATE INDEX IF NOT EXISTS idx_bills_account ON bills(account);
   `);
 
-  // 创建 categories 表（类别表）
-  if (!tableExists(database, 'categories')) {
+  // 迁移：旧版表名 categories -> bill_categories
+  if (tableExists(database, 'categories') && !tableExists(database, 'bill_categories')) {
     database.exec(`
-      CREATE TABLE categories (
+      ALTER TABLE categories RENAME TO bill_categories;
+      DROP INDEX IF EXISTS idx_categories_parent_id;
+      DROP INDEX IF EXISTS idx_categories_type;
+    `);
+    console.log('已将 categories 表迁移为 bill_categories');
+  }
+
+  // 创建 bill_categories 表（账单类别主数据，支持层级）
+  if (!tableExists(database, 'bill_categories')) {
+    database.exec(`
+      CREATE TABLE bill_categories (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         parent_id INTEGER,
         type TEXT NOT NULL CHECK(type IN ('收入', '支出')),
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (parent_id) REFERENCES categories(id) ON DELETE CASCADE
+        FOREIGN KEY (parent_id) REFERENCES bill_categories(id) ON DELETE CASCADE
       )
     `);
-    console.log('已创建 categories 表');
+    console.log('已创建 bill_categories 表');
   } else {
-    console.log('categories 表已存在，跳过创建');
+    console.log('bill_categories 表已存在，跳过创建');
   }
 
-  // 创建 categories 表索引
   database.exec(`
-    CREATE INDEX IF NOT EXISTS idx_categories_parent_id ON categories(parent_id);
-    CREATE INDEX IF NOT EXISTS idx_categories_type ON categories(type);
+    CREATE INDEX IF NOT EXISTS idx_bill_categories_parent_id ON bill_categories(parent_id);
+    CREATE INDEX IF NOT EXISTS idx_bill_categories_type ON bill_categories(type);
   `);
 
   // 创建 accounts 表（账户表）

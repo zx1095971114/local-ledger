@@ -29,9 +29,10 @@ export interface Bill {
 }
 
 /**
- * 类别实体（支持层级结构）
+ * 账单类别主数据实体（支持层级结构）
+ * 对应数据库表：bill_categories
  */
-export interface Category {
+export interface BillCategory {
   id?: number;
   name: string; // 类别名称
   parent_id?: number | null; // 父类别ID，NULL表示顶级类别

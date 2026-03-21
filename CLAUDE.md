@@ -57,7 +57,7 @@ npm run electron-debug
 
 ### 共享领域模型 (`shared/domain/`)
 - 主进程和渲染进程共享的类型定义
-- `do.ts` - 数据库实体（Bill、Category、Account）
+- `do.ts` - 数据库实体（Bill、BillCategory、Account）
 - `dto.ts` - 数据传输对象（BillQuery、BillView）
 - `result.ts` - `Result<T>` 包装器，提供 `ok()` 和 `error()` 辅助方法
 - `page.ts` - 分页类型，包含 `transToOffsetWay()` 和 `transToCurrentWay()` 辅助方法
@@ -98,7 +98,7 @@ npm run electron-debug
 
 主要表：
 - `bills` - 账单记录，在 date、type、category、account 上有索引
-- `categories` - 层级分类（parent_id 引用 categories.id）
+- `bill_categories` - 账单类别主数据（层级分类，parent_id 引用 bill_categories.id）
 - `accounts` - 账户记录，支持余额追踪
 
 已启用外键（`db.pragma('foreign_keys = ON')`）。
