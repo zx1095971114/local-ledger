@@ -96,6 +96,9 @@ function waitForServer(url: string, maxAttempts = 50, delay = 200): Promise<void
 async function createWindow() {
   win = new BrowserWindow({
     title: 'Main window',
+    width: 1056,
+    height: 704,
+    center: true,
     icon: path.join(process.env.VITE_PUBLIC, 'favicon.ico'),
     webPreferences: {
       preload,

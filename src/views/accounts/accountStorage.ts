@@ -1,25 +1,43 @@
-import type { AccountManageItem } from './types'
-import { INITIAL_ACCOUNTS } from './initialAccounts'
+import type { AccountManageView } from '../../../shared/domain/dto'
+import type { Account } from '../../../shared/domain/do'
 
-const STORAGE_KEY = 'local-ledger:accounts-manage-demo'
+/**
+ * 从后端获取账户列表
+ */
+export async function loadAccounts(): Promise<AccountManageView[]> {
+  const result = await window.accountController.list({})
+  if (result.code === 200 && result.data) {
+    return result.data
+  }
+  throw new Error(result.msg || '加载账户列表失败')
+}
 
-export function loadAccounts(): AccountManageItem[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return structuredClone(INITIAL_ACCOUNTS)
-    const parsed = JSON.parse(raw) as AccountManageItem[]
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : structuredClone(INITIAL_ACCOUNTS)
-  } catch {
-    return structuredClone(INITIAL_ACCOUNTS)
+/**
+ * 创建账户
+ */
+export async function createAccount(account: Account): Promise<void> {
+  const result = await window.accountController.create(account)
+  if (result.code !== 200) {
+    throw new Error(result.msg || '创建账户失败')
   }
 }
 
-export function saveAccounts(list: AccountManageItem[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(list))
+/**
+ * 更新账户
+ */
+export async function updateAccount(account: Account): Promise<void> {
+  const result = await window.accountController.update(account)
+  if (result.code !== 200) {
+    throw new Error(result.msg || '更新账户失败')
+  }
 }
 
-export function resetAccountsToDemo(): AccountManageItem[] {
-  const fresh = structuredClone(INITIAL_ACCOUNTS)
-  saveAccounts(fresh)
-  return fresh
+/**
+ * 删除账户
+ */
+export async function deleteAccount(id: number): Promise<void> {
+  const result = await window.accountController.delete(id)
+  if (result.code !== 200) {
+    throw new Error(result.msg || '删除账户失败')
+  }
 }

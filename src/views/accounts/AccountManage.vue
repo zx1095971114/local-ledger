@@ -1,15 +1,21 @@
 <template>
-  <div class="account-manage-page">
+  <div class="account-manage-page account-manage-page--flush">
     <el-card class="page-card" shadow="never">
       <template #header>
         <div class="page-header">
-          <div>
-            <span class="page-title">账户管理</span>
-            <p class="page-sub">
-              负债以负数余额展示；饼图仅统计正余额。整体饼图分母为<strong>总资产</strong>，与上方<strong>净资产</strong>含义不同。
-            </p>
+          <div class="page-title-block">
+            <div class="page-title-row">
+              <span class="page-title">账户管理</span>
+              <el-tooltip placement="bottom-start" effect="light" :show-after="200">
+                <template #content>
+                  <div class="spec-tooltip">
+                    负债以负数余额展示；饼图仅统计正余额。整体饼图分母为<strong>总资产</strong>（正余额之和），与<strong>净资产</strong>（各账户余额代数和，含负债）含义不同。
+                  </div>
+                </template>
+                <el-button text type="primary" class="spec-btn" :icon="QuestionFilled">口径说明</el-button>
+              </el-tooltip>
+            </div>
           </div>
-          <el-button text type="primary" @click="handleResetDemo">恢复演示数据</el-button>
         </div>
       </template>
 
@@ -21,34 +27,30 @@
           class="toolbar-search"
           :prefix-icon="Search"
         />
-        <el-select v-model="sortMode" placeholder="组内排序" style="width: 160px">
+        <el-select v-model="sortMode" placeholder="组内排序" class="toolbar-sort">
           <el-option label="按排序号" value="sort_order" />
           <el-option label="按名称" value="name" />
           <el-option label="按余额（高→低）" value="balance_desc" />
         </el-select>
-        <el-button type="primary" :icon="Plus" @click="openCreate">新增账户</el-button>
+        <el-button type="primary" :icon="Plus" @click="openCreateAccount">新增账户</el-button>
       </div>
 
-      <el-row :gutter="16" class="summary-row">
-        <el-col :xs="24" :sm="8">
-          <div class="summary-cell">
-            <div class="summary-label">净资产</div>
-            <div class="summary-value">{{ formatMoney(summary.netWorth) }}</div>
-          </div>
-        </el-col>
-        <el-col :xs="24" :sm="8">
-          <div class="summary-cell">
-            <div class="summary-label">总资产（正余额合计）</div>
-            <div class="summary-value positive">{{ formatMoney(summary.totalAssets) }}</div>
-          </div>
-        </el-col>
-        <el-col :xs="24" :sm="8">
-          <div class="summary-cell">
-            <div class="summary-label">总负债（负余额绝对值）</div>
-            <div class="summary-value negative">{{ formatMoney(summary.totalLiability) }}</div>
-          </div>
-        </el-col>
-      </el-row>
+      <div class="summary-strip">
+        <div class="summary-item">
+          <div class="summary-label">净资产</div>
+          <div class="summary-num">{{ formatMoney(summary.netWorth) }}</div>
+        </div>
+        <div class="summary-divider" aria-hidden="true" />
+        <div class="summary-item">
+          <div class="summary-label">总资产</div>
+          <div class="summary-num positive">{{ formatMoney(summary.totalAssets) }}</div>
+        </div>
+        <div class="summary-divider" aria-hidden="true" />
+        <div class="summary-item">
+          <div class="summary-label">总负债</div>
+          <div class="summary-num negative">{{ formatMoney(summary.totalLiability) }}</div>
+        </div>
+      </div>
 
       <el-card class="block-card" shadow="never">
         <template #header>
@@ -58,130 +60,101 @@
           </el-tooltip>
         </template>
         <p v-if="summary.totalAssets <= 0" class="hint-text">暂无正余额资产</p>
-        <el-row v-else :gutter="16" class="overall-row">
-          <el-col :xs="24" :lg="14">
-            <AccountPieChart :items="overallPieItems" height="260px" />
-          </el-col>
-          <el-col :xs="24" :lg="10">
-            <p class="side-note">
-              净资产 = 各账户余额代数和（含负债）。若存在信用卡欠款等，总资产 &gt; 净资产。
-            </p>
-          </el-col>
-        </el-row>
-      </el-card>
-
-      <el-collapse v-model="expandedGroups" class="group-collapse">
-        <el-collapse-item
-          v-for="g in groupedAccounts"
-          :key="g.key"
-          :title="`${g.label}（${g.items.length}）`"
-          :name="g.key"
-        >
-          <el-row :gutter="16" class="group-row">
-            <el-col :xs="24" :md="10" :lg="9">
-              <div v-if="!g.pieItems.length" class="chart-placeholder">该类别下暂无正余额账户</div>
-              <AccountPieChart v-else :items="g.pieItems" height="220px" />
-              <p v-if="g.hasNegative" class="hint-text small">以下列表中含负债账户，未计入上图占比</p>
+        <template v-else>
+          <el-row :gutter="20" class="overall-row">
+            <el-col :xs="24" :lg="12">
+              <AccountPieChart :items="overallPieItems" :height="isNarrow ? '220px' : '300px'" />
             </el-col>
-            <el-col :xs="24" :md="14" :lg="15">
-              <el-table :data="g.items" stripe size="small" @row-click="(row: AccountManageItem) => goBills(row)">
-                <el-table-column prop="name" label="名称" min-width="100" />
-                <el-table-column prop="balance" label="余额" width="120" align="right">
-                  <template #default="{ row }">
-                    <span :class="row.balance < 0 ? 'text-liability' : 'text-asset'">
-                      {{ formatMoney(row.balance) }}
-                    </span>
-                    <el-tag v-if="row.balance < 0" type="danger" size="small" class="tag-liability">负债</el-tag>
-                  </template>
-                </el-table-column>
-                <el-table-column prop="note" label="备注" min-width="80" show-overflow-tooltip />
-                <el-table-column prop="sort_order" label="排序" width="72" align="center" />
-                <el-table-column label="操作" width="200" fixed="right" align="right">
-                  <template #default="{ row }">
-                    <el-button type="primary" link size="small" @click.stop="openEdit(row)">编辑</el-button>
-                    <el-button type="primary" link size="small" @click.stop="goBills(row)">账单</el-button>
-                    <el-button type="danger" link size="small" @click.stop="handleDelete(row)">删除</el-button>
-                  </template>
-                </el-table-column>
-              </el-table>
+            <el-col :xs="24" :lg="12">
+              <div class="overall-table-head">各账户占比</div>
+              <div class="overall-table-scroll">
+                <el-table :data="overallBreakdown" size="small" stripe :max-height="isNarrow ? 200 : 300">
+                  <el-table-column prop="name" label="账户" min-width="88" show-overflow-tooltip />
+                  <el-table-column label="余额" width="108" align="right">
+                    <template #default="{ row }">
+                      ¥{{ row.value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="占比" width="76" align="right">
+                    <template #default="{ row }">{{ row.pct.toFixed(1) }}%</template>
+                  </el-table-column>
+                </el-table>
+              </div>
             </el-col>
           </el-row>
-        </el-collapse-item>
-      </el-collapse>
+          <el-alert type="info" :closable="false" show-icon class="overall-footnote">
+            净资产 = 各账户余额代数和（含负债）；存在负债时通常总资产 &gt; 净资产。
+          </el-alert>
+        </template>
+      </el-card>
+
+      <div class="category-matrix">
+        <el-row
+          v-for="(pair, rowIdx) in categoryPairs"
+          :key="rowIdx"
+          :gutter="16"
+          class="category-pair-row"
+        >
+          <el-col v-for="g in pair" :key="g.key" :xs="24" :lg="12">
+            <AccountCategoryPanel
+              :group="g"
+              :is-narrow="isNarrow"
+              @go-bills="goBills"
+              @edit="onEditAccount"
+              @delete="handleDelete"
+            />
+          </el-col>
+        </el-row>
+      </div>
     </el-card>
 
-    <el-dialog
-      v-model="dialogVisible"
-      :title="editingId ? '编辑账户' : '新增账户'"
-      width="480px"
-      destroy-on-close
-      @closed="resetForm"
-    >
-      <el-form ref="formRef" :model="form" :rules="formRules" label-width="88px">
-        <el-form-item label="名称" prop="name">
-          <el-input v-model="form.name" maxlength="64" show-word-limit />
-        </el-form-item>
-        <el-form-item label="类别" prop="type">
-          <el-select v-model="form.type" filterable allow-create default-first-option placeholder="选择或输入">
-            <el-option label="未分类" value="" />
-            <el-option v-for="t in ACCOUNT_TYPE_PRESETS" :key="t" :label="t" :value="t" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="余额" prop="balance">
-          <el-input-number v-model="form.balance" :precision="2" :step="100" controls-position="right" class="w-full-num" />
-        </el-form-item>
-        <el-form-item label="排序号" prop="sort_order">
-          <el-input-number v-model="form.sort_order" :min="0" :step="1" controls-position="right" class="w-full-num" />
-        </el-form-item>
-        <el-form-item label="备注" prop="note">
-          <el-input v-model="form.note" type="textarea" :rows="2" maxlength="200" show-word-limit />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitForm">保存</el-button>
-      </template>
-    </el-dialog>
+    <AccountFormDialog
+      ref="accountFormRef"
+      v-model:visible="formVisible"
+      @submit-create="handleCreate"
+      @submit-update="handleUpdate"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { Plus, Search, QuestionFilled } from '@element-plus/icons-vue'
-import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import AccountPieChart from './components/AccountPieChart.vue'
-import { loadAccounts, saveAccounts, resetAccountsToDemo } from './accountStorage'
-import type { AccountManageItem, AccountSortMode } from './types'
-import { ACCOUNT_TYPE_PRESETS } from './types'
+import AccountCategoryPanel from './components/AccountCategoryPanel.vue'
+import AccountFormDialog from './components/AccountFormDialog.vue'
+import { loadAccounts, createAccount, updateAccount, deleteAccount } from './accountStorage'
+import type { AccountManageView, AccountSortMode } from './types'
+import { formatMoney } from './utils/formatMoney'
 
 const router = useRouter()
 
-const accounts = ref<AccountManageItem[]>(loadAccounts())
+const accounts = ref<AccountManageView[]>([])
+const loading = ref(false)
 const keyword = ref('')
 const sortMode = ref<AccountSortMode>('sort_order')
-const expandedGroups = ref<string[]>([])
+const isNarrow = ref(false)
+let mq: MediaQueryList | null = null
 
-const dialogVisible = ref(false)
-const editingId = ref<number | null>(null)
-const editingOriginalName = ref('')
-const formRef = ref<FormInstance>()
-const form = ref({
-  name: '',
-  type: '',
-  balance: 0,
-  sort_order: 0,
-  note: ''
-})
+const formVisible = ref(false)
+const accountFormRef = ref<InstanceType<typeof AccountFormDialog> | null>(null)
 
-const formRules: FormRules = {
-  name: [{ required: true, message: '请输入名称', trigger: 'blur' }]
+// 加载账户列表
+async function fetchAccounts() {
+  loading.value = true
+  try {
+    accounts.value = await loadAccounts()
+  } catch (error: any) {
+    ElMessage.error(error.message || '加载账户列表失败')
+  } finally {
+    loading.value = false
+  }
 }
 
-function formatMoney(n: number) {
-  const sign = n < 0 ? '-' : ''
-  return `${sign}¥${Math.abs(n).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+function updateNarrow() {
+  isNarrow.value = typeof window !== 'undefined' && window.matchMedia('(max-width: 991px)').matches
 }
 
 const filteredAccounts = computed(() => {
@@ -194,7 +167,7 @@ const filteredAccounts = computed(() => {
   )
 })
 
-function compareInGroup(a: AccountManageItem, b: AccountManageItem): number {
+function compareInGroup(a: AccountManageView, b: AccountManageView): number {
   switch (sortMode.value) {
     case 'name':
       return a.name.localeCompare(b.name, 'zh-CN')
@@ -207,7 +180,7 @@ function compareInGroup(a: AccountManageItem, b: AccountManageItem): number {
   }
 }
 
-const GROUP_ORDER = ['现金', '储蓄卡', '信用卡', '投资', '其他', '未分类']
+const GROUP_ORDER = ['活钱账户', '理财账户', '定期账户', '欠款账户', '未分类']
 
 function groupLabel(typeRaw: string) {
   const t = typeRaw.trim()
@@ -215,7 +188,7 @@ function groupLabel(typeRaw: string) {
 }
 
 const groupedAccounts = computed(() => {
-  const map = new Map<string, AccountManageItem[]>()
+  const map = new Map<string, AccountManageView[]>()
   for (const a of filteredAccounts.value) {
     const label = groupLabel(a.type)
     if (!map.has(label)) map.set(label, [])
@@ -239,8 +212,18 @@ const groupedAccounts = computed(() => {
     const key = label
     const pieItems = items.filter((i) => i.balance > 0).map((i) => ({ name: i.name, value: i.balance }))
     const hasNegative = items.some((i) => i.balance < 0)
-    return { key, label, items, pieItems, hasNegative }
+    const groupNet = items.reduce((s, a) => s + a.balance, 0)
+    return { key, label, items, pieItems, hasNegative, groupNet }
   })
+})
+
+const categoryPairs = computed(() => {
+  const list = groupedAccounts.value
+  const pairs: (typeof list)[] = []
+  for (let i = 0; i < list.length; i += 2) {
+    pairs.push(list.slice(i, i + 2))
+  }
+  return pairs
 })
 
 const summary = computed(() => {
@@ -261,131 +244,96 @@ const overallPieItems = computed(() =>
     .map((a) => ({ name: a.name, value: a.balance }))
 )
 
-watch(
-  accounts,
-  (v) => {
-    saveAccounts(v)
-  },
-  { deep: true }
-)
-
-let nextId = accounts.value.reduce((m, a) => Math.max(m, a.id), 0) + 1
-
-onMounted(async () => {
-  await nextTick()
-  expandedGroups.value = groupedAccounts.value.map((g) => g.key)
+const overallBreakdown = computed(() => {
+  const G = summary.value.totalAssets
+  return overallPieItems.value.map((i) => ({
+    name: i.name,
+    value: i.value,
+    pct: G > 0 ? (i.value / G) * 100 : 0
+  }))
 })
 
-function handleResetDemo() {
-  accounts.value = resetAccountsToDemo()
-  nextId = accounts.value.reduce((m, a) => Math.max(m, a.id), 0) + 1
-  ElMessage.success('已恢复演示数据')
-}
+onMounted(() => {
+  updateNarrow()
+  mq = window.matchMedia('(max-width: 991px)')
+  mq.addEventListener('change', updateNarrow)
+  fetchAccounts()
+})
 
-function goBills(row: AccountManageItem) {
+onBeforeUnmount(() => {
+  mq?.removeEventListener('change', updateNarrow)
+})
+
+function goBills(row: AccountManageView) {
   router.push({
     path: '/bills',
     query: { account: encodeURIComponent(row.name) }
   })
 }
 
-function openCreate() {
-  editingId.value = null
-  editingOriginalName.value = ''
-  form.value = { name: '', type: '现金', balance: 0, sort_order: 0, note: '' }
-  dialogVisible.value = true
+function openCreateAccount() {
+  accountFormRef.value?.openCreate()
 }
 
-function openEdit(row: AccountManageItem) {
-  editingId.value = row.id
-  editingOriginalName.value = row.name
-  form.value = {
-    name: row.name,
-    type: row.type || '',
-    balance: row.balance,
-    sort_order: row.sort_order,
-    note: row.note || ''
-  }
-  dialogVisible.value = true
+function onEditAccount(row: AccountManageView) {
+  accountFormRef.value?.openEdit(row)
 }
 
-function resetForm() {
-  formRef.value?.resetFields()
-}
-
-async function submitForm() {
-  await formRef.value?.validate().catch(() => Promise.reject())
-  const nameTrim = form.value.name.trim()
-  if (!nameTrim) {
-    ElMessage.warning('名称不能为空')
-    return
-  }
-  const dup = accounts.value.some((a) => a.name === nameTrim && a.id !== editingId.value)
-  if (dup) {
-    ElMessage.error('账户名称已存在')
-    return
-  }
-
-  if (editingId.value != null && editingOriginalName.value !== nameTrim) {
-    try {
-      await ElMessageBox.confirm(
-        '修改名称后，历史账单中的账户名字符串不会自动变更，可能与主数据不一致。是否仍要保存？',
-        '改名提示',
-        { type: 'warning' }
-      )
-    } catch {
-      return
-    }
-  }
-
-  if (editingId.value == null) {
-    accounts.value.push({
-      id: nextId++,
-      name: nameTrim,
-      type: form.value.type?.trim() || '',
-      balance: form.value.balance ?? 0,
-      sort_order: form.value.sort_order ?? 0,
-      note: form.value.note?.trim() || ''
-    })
-    ElMessage.success('已新增')
-  } else {
-    const idx = accounts.value.findIndex((a) => a.id === editingId.value)
-    if (idx !== -1) {
-      accounts.value[idx] = {
-        ...accounts.value[idx]!,
-        name: nameTrim,
-        type: form.value.type?.trim() || '',
-        balance: form.value.balance ?? 0,
-        sort_order: form.value.sort_order ?? 0,
-        note: form.value.note?.trim() || ''
-      }
-    }
-    ElMessage.success('已保存')
-  }
-  dialogVisible.value = false
-}
-
-async function handleDelete(row: AccountManageItem) {
+async function handleDelete(row: AccountManageView) {
   try {
     await ElMessageBox.confirm(`确定删除账户「${row.name}」？`, '提示', { type: 'warning' })
   } catch {
     return
   }
-  accounts.value = accounts.value.filter((a) => a.id !== row.id)
-  ElMessage.success('已删除')
+  try {
+    await deleteAccount(row.id!)
+    ElMessage.success('已删除')
+    await fetchAccounts()
+  } catch (error: any) {
+    ElMessage.error(error.message || '删除失败')
+  }
+}
+
+// 处理新增账户
+async function handleCreate(data: { name: string; type: string; balance: number; sort_order: number; note: string }) {
+  try {
+    await createAccount(data as any)
+    ElMessage.success('已新增')
+    await fetchAccounts()
+  } catch (error: any) {
+    ElMessage.error(error.message || '创建失败')
+  }
+}
+
+// 处理更新账户
+async function handleUpdate(data: { id: number; name: string; type: string; balance: number; sort_order: number; note: string }) {
+  try {
+    await updateAccount(data as any)
+    ElMessage.success('已保存')
+    await fetchAccounts()
+  } catch (error: any) {
+    ElMessage.error(error.message || '更新失败')
+  }
 }
 </script>
 
 <style scoped>
 .account-manage-page {
-  height: 100%;
-  min-height: 0;
-  overflow: auto;
+  padding-bottom: 24px;
+  box-sizing: border-box;
+}
+
+.account-manage-page--flush {
+  width: calc(100% + 40px);
+  max-width: none;
+  margin-left: -20px;
+  margin-right: -20px;
+  padding-left: 20px;
+  padding-right: 20px;
 }
 
 .page-card {
-  max-width: 1200px;
-  margin: 0 auto;
+  max-width: 100%;
 }
 
 .page-card :deep(.el-card__body) {
@@ -399,17 +347,27 @@ async function handleDelete(row: AccountManageItem) {
   gap: 16px;
 }
 
+.page-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .page-title {
   font-size: 16px;
   font-weight: 600;
 }
 
-.page-sub {
-  margin: 6px 0 0;
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
+.spec-btn {
+  padding: 4px 8px;
+  font-size: 13px;
+}
+
+.spec-tooltip {
+  max-width: 320px;
   line-height: 1.5;
-  max-width: 720px;
+  font-size: 13px;
 }
 
 .toolbar {
@@ -417,41 +375,72 @@ async function handleDelete(row: AccountManageItem) {
   flex-wrap: wrap;
   gap: 12px;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
+  width: 100%;
 }
 
 .toolbar-search {
-  width: 240px;
-  max-width: 100%;
+  flex: 1 1 280px;
+  max-width: min(420px, 100%);
+  min-width: 160px;
 }
 
-.summary-row {
-  margin-bottom: 20px;
+.toolbar-sort {
+  width: 160px;
+  min-width: 140px;
 }
 
-.summary-cell {
-  padding: 12px 16px;
-  background: var(--el-fill-color-light);
+@media (max-width: 576px) {
+  .toolbar-search,
+  .toolbar-sort {
+    width: 100%;
+    flex: 1 1 100%;
+  }
+}
+
+.summary-strip {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-around;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  border: 1px solid var(--el-border-color-lighter);
   border-radius: 8px;
-  margin-bottom: 8px;
+  background: var(--el-fill-color-blank);
+}
+
+.summary-item {
+  flex: 1;
+  text-align: center;
+  min-width: 0;
+  padding: 4px 8px;
+}
+
+.summary-divider {
+  width: 1px;
+  align-self: stretch;
+  background: var(--el-border-color-lighter);
+  flex-shrink: 0;
 }
 
 .summary-label {
   font-size: 12px;
   color: var(--el-text-color-secondary);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
-.summary-value {
-  font-size: 20px;
-  font-weight: 600;
+.summary-num {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--el-text-color-primary);
 }
 
-.summary-value.positive {
+.summary-num.positive {
   color: var(--el-color-success);
 }
 
-.summary-value.negative {
+.summary-num.negative {
   color: var(--el-color-danger);
 }
 
@@ -476,69 +465,40 @@ async function handleDelete(row: AccountManageItem) {
   color: var(--el-text-color-secondary);
 }
 
-.hint-text.small {
-  margin-top: 8px;
-  font-size: 12px;
-}
-
 .overall-row {
-  align-items: center;
+  align-items: stretch;
 }
 
-.side-note {
+.overall-table-head {
   font-size: 13px;
-  color: var(--el-text-color-secondary);
-  line-height: 1.6;
-  margin: 0;
-  padding: 8px 0;
-}
-
-.group-collapse {
-  border: none;
-}
-
-.group-collapse :deep(.el-collapse-item__header) {
   font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--el-text-color-regular);
 }
 
-.group-collapse :deep(.el-collapse-item__wrap) {
-  border-bottom: 1px solid var(--el-border-color-lighter);
+.overall-table-scroll {
+  width: 100%;
+  min-width: 0;
 }
 
-.group-row {
-  padding-bottom: 8px;
+.overall-footnote {
+  margin-top: 12px;
 }
 
-.chart-placeholder {
-  height: 220px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.overall-footnote :deep(.el-alert__content) {
+  line-height: 1.5;
   font-size: 13px;
-  color: var(--el-text-color-secondary);
-  background: var(--el-fill-color-lighter);
-  border-radius: 8px;
 }
 
-.text-asset {
-  font-weight: 600;
-}
-
-.text-liability {
-  color: var(--el-color-danger);
-  font-weight: 600;
-}
-
-.tag-liability {
-  margin-left: 6px;
-  vertical-align: middle;
-}
-
-.w-full-num {
+.category-matrix {
   width: 100%;
 }
 
-.w-full-num :deep(.el-input__wrapper) {
-  width: 100%;
+.category-pair-row {
+  margin-bottom: 16px;
+}
+
+.category-pair-row:last-child {
+  margin-bottom: 0;
 }
 </style>

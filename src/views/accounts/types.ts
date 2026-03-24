@@ -1,15 +1,17 @@
-/** 账户管理页使用的行数据（与 spec 对齐；当前由前端 mock + localStorage 持久化） */
-export interface AccountManageItem {
-  id: number
-  name: string
-  /** 账户类别：现金 / 储蓄卡 等；空字符串归入「未分类」 */
-  type: string
-  note: string
-  sort_order: number
-  balance: number
-  icon?: string | null
-}
+import type { AccountManageView } from '../../../shared/domain/dto'
+
+export type { AccountManageView }
 
 export type AccountSortMode = 'sort_order' | 'name' | 'balance_desc'
 
-export const ACCOUNT_TYPE_PRESETS = ['现金', '储蓄卡', '信用卡', '投资', '其他'] as const
+export const ACCOUNT_TYPE_PRESETS = ['活钱账户', '理财账户', '定期账户', '欠款账户'] as const
+
+/** 按类别聚合后的一块数据（供类别面板组件使用） */
+export interface AccountGroupBlock {
+  key: string
+  label: string
+  items: AccountManageView[]
+  pieItems: { name: string; value: number }[]
+  hasNegative: boolean
+  groupNet: number
+}

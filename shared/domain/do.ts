@@ -30,7 +30,7 @@ export interface Bill {
 
 /**
  * 账单类别主数据实体（支持层级结构）
- * 对应数据库表：bill_categories
+ * 对应数据库表：bill_category
  */
 export interface BillCategory {
   id?: number;
@@ -50,5 +50,7 @@ export interface Account {
   balance?: number; // 余额，默认0
   created_at?: string; // 创建时间
   updated_at?: string; // 更新时间
+  type: string
+  note: string
+  sort_order: number
 }
-

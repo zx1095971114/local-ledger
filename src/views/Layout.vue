@@ -13,7 +13,8 @@
         </div>
       </div>
     </el-header>
-    <el-container>
+    <!-- 必须 flex:1 + min-height:0，否则高度随内容撑破视口，外层 overflow:hidden 裁切且主区永不出现纵向滚动条 -->
+    <el-container class="app-body">
       <el-aside width="200px" class="app-sidebar">
         <el-menu
           :default-active="activeMenu"
@@ -68,6 +69,14 @@ const toggleTheme = () => {
 .app-container {
   height: 100vh;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .app-header {
@@ -117,12 +126,14 @@ const toggleTheme = () => {
   flex-direction: column;
 }
 
+/* 唯一纵向滚动层：子页面内容增高时可滚到底，避免 overflow:hidden 裁切且滚轮无效 */
 .main-content {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 </style>
 

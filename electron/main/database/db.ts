@@ -64,6 +64,8 @@ export function initDatabase(): Database {
     throw new Error(`无法创建数据库连接: ${error.message || error}`);
   }
 
+  // 启用 WAL 模式（支持读写并发，方便外部工具查看）
+  db.pragma('journal_mode = WAL');
   // 启用外键约束
   db.pragma('foreign_keys = ON');
 
@@ -86,14 +88,34 @@ function tableExists(database: Database, tableName: string): boolean {
 }
 
 /**
+ * 检查列是否存在
+ */
+function columnExists(database: Database, tableName: string, columnName: string): boolean {
+  const rows = database.prepare(`PRAGMA table_info(${tableName})`).all() as Array<{ name: string }>;
+  return rows.some((row) => row.name === columnName);
+}
+
+/**
  * 初始化所有表结构
  * 如果表已存在，则跳过创建
  */
 function initTables(database: Database): void {
-  // 创建 bills 表（账单表）
-  if (!tableExists(database, 'bills')) {
+  // 迁移：bills -> bill
+  if (tableExists(database, 'bills') && !tableExists(database, 'bill')) {
     database.exec(`
-      CREATE TABLE bills (
+      ALTER TABLE bills RENAME TO bill;
+      DROP INDEX IF EXISTS idx_bills_date;
+      DROP INDEX IF EXISTS idx_bills_type;
+      DROP INDEX IF EXISTS idx_bills_category;
+      DROP INDEX IF EXISTS idx_bills_account;
+    `);
+    console.log('已将 bills 表迁移为 bill');
+  }
+
+  // 创建 bill 表（账单表）
+  if (!tableExists(database, 'bill')) {
+    database.exec(`
+      CREATE TABLE bill (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         date TEXT NOT NULL,
         type TEXT NOT NULL CHECK(type IN ('收入', '支出')),
@@ -116,67 +138,107 @@ function initTables(database: Database): void {
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
-    console.log('已创建 bills 表');
+    console.log('已创建 bill 表');
   } else {
-    console.log('bills 表已存在，跳过创建');
+    console.log('bill 表已存在，跳过创建');
   }
 
-  // 创建 bills 表索引
+  // bill 表索引
   database.exec(`
-    CREATE INDEX IF NOT EXISTS idx_bills_date ON bills(date);
-    CREATE INDEX IF NOT EXISTS idx_bills_type ON bills(type);
-    CREATE INDEX IF NOT EXISTS idx_bills_category ON bills(category);
-    CREATE INDEX IF NOT EXISTS idx_bills_account ON bills(account);
+    CREATE INDEX IF NOT EXISTS idx_bill_date ON bill(date);
+    CREATE INDEX IF NOT EXISTS idx_bill_type ON bill(type);
+    CREATE INDEX IF NOT EXISTS idx_bill_category ON bill(category);
+    CREATE INDEX IF NOT EXISTS idx_bill_account ON bill(account);
   `);
 
-  // 迁移：旧版表名 categories -> bill_categories
-  if (tableExists(database, 'categories') && !tableExists(database, 'bill_categories')) {
+  // 迁移：旧版 categories -> bill_category（无中间 bill_categories 时）
+  if (
+    tableExists(database, 'categories') &&
+    !tableExists(database, 'bill_category') &&
+    !tableExists(database, 'bill_categories')
+  ) {
     database.exec(`
-      ALTER TABLE categories RENAME TO bill_categories;
+      ALTER TABLE categories RENAME TO bill_category;
       DROP INDEX IF EXISTS idx_categories_parent_id;
       DROP INDEX IF EXISTS idx_categories_type;
     `);
-    console.log('已将 categories 表迁移为 bill_categories');
+    console.log('已将 categories 表迁移为 bill_category');
   }
 
-  // 创建 bill_categories 表（账单类别主数据，支持层级）
-  if (!tableExists(database, 'bill_categories')) {
+  // 迁移：bill_categories -> bill_category
+  if (tableExists(database, 'bill_categories') && !tableExists(database, 'bill_category')) {
     database.exec(`
-      CREATE TABLE bill_categories (
+      ALTER TABLE bill_categories RENAME TO bill_category;
+      DROP INDEX IF EXISTS idx_bill_categories_parent_id;
+      DROP INDEX IF EXISTS idx_bill_categories_type;
+    `);
+    console.log('已将 bill_categories 表迁移为 bill_category');
+  }
+
+  // 创建 bill_category 表（账单类别主数据，支持层级）
+  if (!tableExists(database, 'bill_category')) {
+    database.exec(`
+      CREATE TABLE bill_category (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         parent_id INTEGER,
         type TEXT NOT NULL CHECK(type IN ('收入', '支出')),
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (parent_id) REFERENCES bill_categories(id) ON DELETE CASCADE
+        FOREIGN KEY (parent_id) REFERENCES bill_category(id) ON DELETE CASCADE
       )
     `);
-    console.log('已创建 bill_categories 表');
+    console.log('已创建 bill_category 表');
   } else {
-    console.log('bill_categories 表已存在，跳过创建');
+    console.log('bill_category 表已存在，跳过创建');
   }
 
   database.exec(`
-    CREATE INDEX IF NOT EXISTS idx_bill_categories_parent_id ON bill_categories(parent_id);
-    CREATE INDEX IF NOT EXISTS idx_bill_categories_type ON bill_categories(type);
+    CREATE INDEX IF NOT EXISTS idx_bill_category_parent_id ON bill_category(parent_id);
+    CREATE INDEX IF NOT EXISTS idx_bill_category_type ON bill_category(type);
   `);
 
-  // 创建 accounts 表（账户表）
-  if (!tableExists(database, 'accounts')) {
+  // 迁移：accounts -> account
+  if (tableExists(database, 'accounts') && !tableExists(database, 'account')) {
+    database.exec(`ALTER TABLE accounts RENAME TO account;`);
+    console.log('已将 accounts 表迁移为 account');
+  }
+
+  // 创建 account 表（账户表）
+  if (!tableExists(database, 'account')) {
     database.exec(`
-      CREATE TABLE accounts (
+      CREATE TABLE account (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
+        type TEXT NOT NULL DEFAULT '' CHECK(type IN ('活钱账户', '理财账户', '定期账户', '欠款账户')),
         icon TEXT,
         balance REAL DEFAULT 0,
+        note TEXT,
+        sort_order INTEGER NOT NULL DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
-    console.log('已创建 accounts 表');
+    console.log('已创建 account 表');
   } else {
-    console.log('accounts 表已存在，跳过创建');
+    console.log('account 表已存在，跳过创建');
+    // account 增量迁移：补齐新增字段
+    if (!columnExists(database, 'account', 'type')) {
+      database.exec(`ALTER TABLE account ADD COLUMN type TEXT NOT NULL DEFAULT '' CHECK(type IN ('活钱账户', '理财账户', '定期账户', '欠款账户'));`);
+      console.log('account 表已新增 type 字段');
+    }
+    if (!columnExists(database, 'account', 'note')) {
+      database.exec(`ALTER TABLE account ADD COLUMN note TEXT;`);
+      console.log('account 表已新增 note 字段');
+    }
+    if (!columnExists(database, 'account', 'sort_order')) {
+      database.exec(`ALTER TABLE account ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0;`);
+      console.log('account 表已新增 sort_order 字段');
+    }
   }
+
+  database.exec(`
+    CREATE INDEX IF NOT EXISTS idx_account_sort_order ON account(sort_order);
+  `);
 }
 
 /**
@@ -199,4 +261,3 @@ export function closeDatabase(): void {
     db = null;
   }
 }
-

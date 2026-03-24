@@ -14,17 +14,25 @@
       <div class="filter-section">
         <el-form :model="filterForm">
           <div class="filter-row">
-            <el-form-item label="日期范围">
+            <el-form-item label="日期范围" class="filter-item-date">
               <el-date-picker
                 v-model="filterForm.dateRange"
                 type="daterange"
+                size="large"
                 range-separator="至"
                 start-placeholder="开始日期"
                 end-placeholder="结束日期"
+                class="filter-control-wide"
               />
             </el-form-item>
             <el-form-item label="类型">
-              <el-select v-model="filterForm.type" placeholder="请选择" clearable>
+              <el-select
+                v-model="filterForm.type"
+                placeholder="请选择"
+                clearable
+                size="large"
+                class="filter-control-wide"
+              >
                 <el-option label="收入" value="收入" />
                 <el-option label="支出" value="支出" />
               </el-select>
@@ -34,9 +42,10 @@
                 v-model="filterForm.category"
                 placeholder="请输入类别"
                 clearable
+                size="large"
+                class="filter-control-wide"
               />
             </el-form-item>
-            <div class="filter-placeholder" />
           </div>
           <div class="filter-actions">
             <el-button type="primary" :icon="Search" @click="handleSearch">
@@ -369,8 +378,8 @@ onMounted(() => {
 
 .filter-row {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 0 16px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px 20px;
   align-items: center;
   margin-bottom: 12px;
 }
@@ -388,14 +397,27 @@ onMounted(() => {
   min-width: 0;
 }
 
-.filter-placeholder {
+.filter-item-date {
+  grid-column: span 2;
   min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .filter-item-date {
+    grid-column: span 1;
+  }
+}
+
+.filter-row :deep(.filter-control-wide) {
+  width: 100%;
+  min-width: 240px;
 }
 
 .filter-actions {
   display: flex;
-  justify-content: flex-start;
+  justify-content: flex-end;
   align-items: center;
+  gap: 12px;
 }
 
 .income {

@@ -1,7 +1,8 @@
 import { ipcRenderer, contextBridge } from 'electron'
 import {Result} from "../../shared/domain/result";
-import {BillQuery, BillView} from "../../shared/domain/dto";
+import {AccountManageView, AccountQuery, BillQuery, BillView} from "../../shared/domain/dto";
 import {Page} from "../../shared/domain/page";
+import type { Account } from "../../shared/domain/do";
 
 // --------- Expose some API to the Renderer process ---------
 contextBridge.exposeInMainWorld('ipcRenderer', {
@@ -35,6 +36,21 @@ contextBridge.exposeInMainWorld('billController', {
   },
   delete: (id: number): Promise<Result<void>> => {
     return ipcRenderer.invoke('bill:delete', id)
+  }
+})
+
+contextBridge.exposeInMainWorld('accountController', {
+  list: (query: AccountQuery): Promise<Result<AccountManageView[]>> => {
+    return ipcRenderer.invoke('account:list', query)
+  },
+  create: (account: Account): Promise<Result<void>> => {
+    return ipcRenderer.invoke('account:create', account)
+  },
+  update: (account: Account): Promise<Result<void>> => {
+    return ipcRenderer.invoke('account:update', account)
+  },
+  delete: (id: number): Promise<Result<void>> => {
+    return ipcRenderer.invoke('account:delete', id)
   }
 })
 

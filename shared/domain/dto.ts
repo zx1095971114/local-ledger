@@ -1,14 +1,27 @@
-import {Bill} from "./do";
+import {Account, Bill, BillCategory} from "./do";
 import {Page} from "./page";
 
-interface BillQuery extends Bill{
+export interface BillQuery extends Bill{
     dateFrom?: Date;
     dateTo?: Date;
     pageInfo?: Page<any>
 }
 
-interface BillView extends Bill{
+export interface BillView extends Bill{
 
 }
 
-export {BillQuery, BillView}
+/**
+ * 账户管理页列表/表单行（与 IPC、API 对齐的展示与传输形状）
+ */
+export interface AccountManageView extends Account{
+
+}
+
+export interface AccountQuery extends Partial<Account>{
+
+}
+
+export interface BillCategoryQuery extends BillCategory {
+
+}

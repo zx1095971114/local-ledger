@@ -2,6 +2,7 @@ import { getDatabase } from "./db";
 import type { Bill } from "../../../shared/domain/do";
 import {Page, transToOffsetWay, transToCurrentWay, Order} from "../../../shared/domain/page";
 import {BillQuery, BillView} from "../../../shared/domain/dto";
+import {handleOrder} from "./dbUtils";
 
 const commonFields = `
   date, type, amount, category, subcategory, account, ledger,
@@ -10,25 +11,25 @@ const commonFields = `
 `;
 
 const insertStmt = `
-  INSERT INTO bills (
+  INSERT INTO bill (
     ${commonFields}
   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `;
 
 const selectStmt = `
   SELECT id, ${commonFields} 
-  FROM bills
+  FROM bill
 `;
 
 const selectCountStmt = `
   SELECT COUNT(*) as total
-  FROM bills
+  FROM bill
 `;
 
 export function insertBill(bill: Bill): void {
   const db = getDatabase();
   const insert = db.prepare(insertStmt);
-  let count = insert.run(
+  let result = insert.run(
       bill.date.toISOString(),
       bill.type,
       bill.amount,
@@ -47,7 +48,7 @@ export function insertBill(bill: Bill): void {
       bill.other ?? null,
       bill.attachments ?? null
   );
-  if(count < 1){
+  if (result.changes < 1) {
     throw new Error("插入账单失败，请稍后重试");
   }
 }
@@ -117,19 +118,11 @@ export function list(query: BillQuery): Page<BillView>{
   }
 }
 
-function handleOrder(orderBy?: Order[]): string{
-  if(!orderBy){
-    return "";
-  }
-  let orderColumn = orderBy.map(item => {
-    return `${item.column} ${item.order}`
-  }).join(", ");
-  return `ORDER BY ${orderColumn}`
-}
+
 
 export function deleteBill(id: number): void {
   const db = getDatabase();
-  const stmt = db.prepare("DELETE FROM bills WHERE id = ?");
+  const stmt = db.prepare("DELETE FROM bill WHERE id = ?");
   const result = stmt.run(id);
   if (result.changes === 0) {
     throw new Error(`未找到 id=${id} 的账单`);
