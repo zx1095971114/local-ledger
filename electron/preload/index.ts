@@ -1,8 +1,8 @@
 import { ipcRenderer, contextBridge } from 'electron'
 import {Result} from "../../shared/domain/result";
-import {AccountManageView, AccountQuery, BillQuery, BillView} from "../../shared/domain/dto";
+import {AccountManageView, AccountQuery, BillQuery, BillView, BillCategoryQuery} from "../../shared/domain/dto";
 import {Page} from "../../shared/domain/page";
-import type { Account } from "../../shared/domain/do";
+import type { Account, Bill, BillCategory } from "../../shared/domain/do";
 
 // --------- Expose some API to the Renderer process ---------
 contextBridge.exposeInMainWorld('ipcRenderer', {
@@ -36,6 +36,24 @@ contextBridge.exposeInMainWorld('billController', {
   },
   delete: (id: number): Promise<Result<void>> => {
     return ipcRenderer.invoke('bill:delete', id)
+  },
+  create: (bill: Bill): Promise<Result<number>> => {
+    return ipcRenderer.invoke('bill:create', bill)
+  }
+})
+
+contextBridge.exposeInMainWorld('categoryController', {
+  list: (query: BillCategoryQuery): Promise<Result<BillCategory[]>> => {
+    return ipcRenderer.invoke('category:list', query)
+  },
+  create: (category: BillCategory): Promise<Result<void>> => {
+    return ipcRenderer.invoke('category:create', category)
+  },
+  update: (category: BillCategory): Promise<Result<void>> => {
+    return ipcRenderer.invoke('category:update', category)
+  },
+  delete: (id: number): Promise<Result<void>> => {
+    return ipcRenderer.invoke('category:delete', id)
   }
 })
 

@@ -3,6 +3,7 @@ import * as result from "../../../shared/domain/result";
 import * as billService from "../service/billService"
 import {BillQuery, BillView} from "../../../shared/domain/dto";
 import {Page} from "../../../shared/domain/page";
+import type { Bill } from "../../../shared/domain/do";
 
 
 ipcMain.handle("bill:import", (_event, file: ArrayBuffer): result.Result<any> => {
@@ -29,6 +30,16 @@ ipcMain.handle("bill:delete", (_event, id: number): result.Result<void> => {
         return result.ok("删除成功");
     } catch (e) {
         console.log("删除失败", e)
+        return result.error(e?.message);
+    }
+})
+
+ipcMain.handle("bill:create", (_event, bill: Bill): result.Result<number> => {
+    try {
+        const id = billService.createBill(bill);
+        return result.ok("创建成功", id);
+    } catch (e) {
+        console.log("创建账单失败", e)
         return result.error(e?.message);
     }
 })

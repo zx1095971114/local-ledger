@@ -26,7 +26,7 @@ const selectCountStmt = `
   FROM bill
 `;
 
-export function insertBill(bill: Bill): void {
+export function insertBill(bill: Bill): number {
   const db = getDatabase();
   const insert = db.prepare(insertStmt);
   let result = insert.run(
@@ -51,6 +51,7 @@ export function insertBill(bill: Bill): void {
   if (result.changes < 1) {
     throw new Error("插入账单失败，请稍后重试");
   }
+  return result.lastInsertRowid as number
 }
 
 export function list(query: BillQuery): Page<BillView>{

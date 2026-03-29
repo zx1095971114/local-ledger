@@ -15,6 +15,10 @@ export function deleteBill(id: number): void {
   billDao.deleteBill(id);
 }
 
+export function createBill(bill: Bill): number {
+  return billDao.insertBill(bill);
+}
+
 
 /** Excel 日期序列号转 JS Date（Excel 的 1 = 1900-01-01） */
 function excelSerialToDate(serial: number): Date {

@@ -22,6 +22,6 @@ export interface AccountQuery extends Partial<Account>{
 
 }
 
-export interface BillCategoryQuery extends BillCategory {
+export interface BillCategoryQuery extends Partial<BillCategory> {
 
 }

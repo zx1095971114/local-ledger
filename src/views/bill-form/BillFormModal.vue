@@ -29,7 +29,7 @@
           v-else
           v-model:account-from="form.accountFrom"
           v-model:account-to="form.accountTo"
-          :accounts="mockAccounts"
+          :accounts="accounts"
           @update:account-from="markDirty"
           @update:account-to="markDirty"
         />
@@ -40,7 +40,7 @@
           v-model:date="form.date"
           v-model:note="form.note"
           v-model:account="form.account"
-          :accounts="mockAccounts"
+          :accounts="accounts"
           :show-account="form.txType === '支出' || form.txType === '收入'"
           @update:amount="markDirty"
           @update:date="markDirty"
@@ -65,7 +65,7 @@ import BillCategoryPanel from './components/BillCategoryPanel.vue'
 import BillTransferFields from './components/BillTransferFields.vue'
 import BillCommonFields from './components/BillCommonFields.vue'
 import { useBillFormState, saveLastTxType, clearTypeSpecificFields } from './composables/useBillFormState'
-import { MOCK_ACCOUNTS, getMockBillForEdit } from './mock/billFormMock'
+import { getMockBillForEdit } from './mock/billFormMock'
 
 const props = defineProps<{
   modelValue: boolean
@@ -83,7 +83,18 @@ const modeComputed = computed(() => props.mode)
 
 const { form, markDirty, applyEditPayload, resetAfterSave } = useBillFormState(visibleComputed, modeComputed)
 
-const mockAccounts = MOCK_ACCOUNTS
+const accounts = ref<string[]>([])
+
+async function loadAccounts() {
+  try {
+    const result = await window.accountController.list({})
+    if (result.code === 200 && result.data) {
+      accounts.value = result.data.map(a => a.name)
+    }
+  } catch (e) {
+    console.error('加载账户失败', e)
+  }
+}
 
 /** 打开/预填时跳过「切换类型清空字段」逻辑 */
 const hydrateLock = ref(false)
@@ -110,6 +121,7 @@ watch(
     if (!open) return
     hydrateLock.value = true
     await nextTick()
+    await loadAccounts()
     if (props.mode === 'update' && props.billId != null) {
       const p = getMockBillForEdit(props.billId)
       applyEditPayload({
@@ -173,12 +185,39 @@ function validate(): boolean {
   return true
 }
 
-function onSave() {
+async function onSave() {
   if (!validate()) return
-  resetAfterSave()
-  ElMessage.success('（Mock）已保存，接入后端后将写入数据库')
-  emit('update:modelValue', false)
-  emit('success')
+  try {
+    const bill: any = {
+      type: form.txType === '支出' ? '支出' : '收入',
+      amount: form.amount,
+      date: form.date,
+      note: form.note || null,
+      account: form.account || null
+    }
+    // 支出/收入：使用 categoryId/subcategoryId 获取类别名称
+    // 转账：使用 accountFrom/accountTo
+    if (form.txType === '支出' || form.txType === '收入') {
+      // category/subcategory 需要通过 ID 查询获取名称
+      // 目前简化为直接使用 ID，待后续优化
+      bill.category = form.categoryId?.toString() ?? null
+      bill.subcategory = form.subcategoryId?.toString() ?? null
+    } else {
+      // 转账场景
+      bill.account = form.accountFrom || null
+    }
+    const result = await window.billController.create(bill)
+    if (result.code === 200) {
+      ElMessage.success('保存成功')
+      resetAfterSave()
+      emit('update:modelValue', false)
+      emit('success')
+    } else {
+      ElMessage.error(result.msg || '保存失败')
+    }
+  } catch (e) {
+    ElMessage.error('保存失败')
+  }
 }
 
 async function onCancel() {

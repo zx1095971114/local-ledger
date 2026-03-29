@@ -17,10 +17,14 @@
 </template>
 
 <script setup lang="ts">
-import type { MockCategory } from '../mock/billFormMock'
+import type { BillCategory } from '../../../../shared/domain/do'
+
+interface CategoryWithChildren extends BillCategory {
+  children: BillCategory[]
+}
 
 defineProps<{
-  categories: MockCategory[]
+  categories: CategoryWithChildren[]
   modelValue: number | null
 }>()
 

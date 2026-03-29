@@ -19,10 +19,14 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { MockCategory, MockSubcategory } from '../mock/billFormMock'
+import type { BillCategory } from '../../../../shared/domain/do'
+
+interface CategoryWithChildren extends BillCategory {
+  children: BillCategory[]
+}
 
 const props = defineProps<{
-  categories: MockCategory[]
+  categories: CategoryWithChildren[]
   parentId: number | null
   modelValue: number | null
 }>()
@@ -31,7 +35,7 @@ const emit = defineEmits<{
   'update:modelValue': [number | null]
 }>()
 
-const subcategories = computed<MockSubcategory[]>(() => {
+const subcategories = computed<BillCategory[]>(() => {
   if (props.parentId == null) return []
   const p = props.categories.find((c) => c.id === props.parentId)
   return p?.children ?? []
