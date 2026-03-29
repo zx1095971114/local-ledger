@@ -54,7 +54,7 @@ export function insertBill(bill: Bill): number {
   return result.lastInsertRowid as number
 }
 
-export function list(query: BillQuery): Page<BillView>{
+export function list(query: BillQuery): Page<Bill>{
   let condition = "";
   const params = [];
   if(query.dateFrom){

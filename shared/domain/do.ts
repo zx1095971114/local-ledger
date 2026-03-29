@@ -10,8 +10,8 @@ export interface Bill {
   date?: Date | null; // 日期
   type?: '收入' | '支出'; // 收支类型
   amount?: number | null; // 金额
-  category?: string | null; // 类别
-  subcategory?: string | null; // 子类
+  category?: number | null; // 类别
+  subcategory?: number | null; // 子类
   account?: string | null; // 账户
   ledger?: string | null; // 账本
   reimbursement_account?: string | null; // 报销账户
@@ -51,6 +51,7 @@ export interface Account {
   balance?: number; // 余额，默认0
   created_at?: string; // 创建时间
   updated_at?: string; // 更新时间
+  is_deleted?: boolean | null; // 软删除标记，true 表示已删除
   type: string
   note: string
   sort_order: number

@@ -220,6 +220,7 @@ function initTables(database: Database): void {
         balance REAL DEFAULT 0,
         note TEXT,
         sort_order INTEGER NOT NULL DEFAULT 0,
+        is_deleted INTEGER DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
@@ -239,6 +240,10 @@ function initTables(database: Database): void {
     if (!columnExists(database, 'account', 'sort_order')) {
       database.exec(`ALTER TABLE account ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0;`);
       console.log('account 表已新增 sort_order 字段');
+    }
+    if (!columnExists(database, 'account', 'is_deleted')) {
+      database.exec(`ALTER TABLE account ADD COLUMN is_deleted INTEGER DEFAULT 0;`);
+      console.log('account 表已新增 is_deleted 字段');
     }
   }
 

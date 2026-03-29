@@ -8,7 +8,6 @@ export interface BillQuery extends Bill{
 }
 
 export interface BillView extends Bill{
-
 }
 
 /**

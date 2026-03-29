@@ -15,5 +15,5 @@ export function update(account: Account): void {
 }
 
 export function remove(id: number): void {
-    accountDao.deleteById(id);
+    accountDao.updateById({ id, is_deleted: true });
 }

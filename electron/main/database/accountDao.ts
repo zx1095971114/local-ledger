@@ -1,9 +1,10 @@
 import {AccountQuery} from "../../../shared/domain/dto";
 import {Account} from "../../../shared/domain/do";
 import {getDatabase} from "./db";
+import {PortableOptions} from "electron-builder";
 
 /** update时手动改的key */
-const UPDATE_KEYS = ["name", "icon", "balance", "type", "note", "sort_order"] as const;
+const UPDATE_KEYS = ["name", "icon", "balance", "type", "note", "sort_order", "is_deleted"] as const;
 /** 时间相关字段 */
 const CREATED_AT = "created_at" as const;
 const UPDATED_AT = "updated_at" as const;
@@ -74,7 +75,7 @@ export function list(query: AccountQuery): Account[] {
     const condition = parts.join(" AND ");
     const whereExtra = condition ? ` AND ${condition}` : "";
     const listQuery = `${selectStmt}
-    WHERE 1 = 1${whereExtra}
+    WHERE is_deleted = 0${whereExtra}
     ORDER BY sort_order ASC, id ASC
     `;
     return db.prepare(listQuery).all(...params) as Account[];
@@ -94,7 +95,7 @@ export function insert(account: Account): void {
 
 type AccountPatchKey = (typeof UPDATE_KEYS)[number];
 
-export function updateById(account: Account): void {
+export function updateById(account: Partial<Account>): void {
     // 自增主键不会出现 0；同时挡住 account 为 null/undefined 或未带 id
     if (!account?.id) {
         return;

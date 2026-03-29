@@ -6,9 +6,17 @@ import * as result from '../../../shared/domain/result'
 import * as billDao from '../database/billDao'
 import {BillQuery, BillView} from "../../../shared/domain/dto";
 import {Page} from "../../../shared/domain/page";
+import * as categoryDao from '../database/billCategoryDao'
 
 export function list(query: BillQuery): Page<BillView> {
-  return billDao.list(query)
+  let bills = billDao.list(query);
+  bills?.rows?.forEach(bill =>{
+    if(bill.category){
+      let category = categoryDao.getById(bill.category)
+
+    }
+  })
+  return
 }
 
 export function deleteBill(id: number): void {
