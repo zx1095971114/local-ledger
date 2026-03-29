@@ -120,9 +120,9 @@ function initTables(database: Database): void {
         date TEXT NOT NULL,
         type TEXT NOT NULL CHECK(type IN ('收入', '支出')),
         amount REAL NOT NULL,
-        category TEXT,
-        subcategory TEXT,
-        account TEXT,
+        category INTEGER,
+        subcategory INTEGER,
+        account INTEGER,
         ledger TEXT,
         reimbursement_account TEXT,
         reimbursement_amount REAL,
@@ -135,7 +135,10 @@ function initTables(database: Database): void {
         other TEXT,
         attachments TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (category) REFERENCES bill_category(id) ON DELETE SET NULL,
+        FOREIGN KEY (subcategory) REFERENCES bill_category(id) ON DELETE SET NULL,
+        FOREIGN KEY (account) REFERENCES account(id) ON DELETE SET NULL
       )
     `);
     console.log('已创建 bill 表');
@@ -215,7 +218,7 @@ function initTables(database: Database): void {
       CREATE TABLE account (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
-        type TEXT NOT NULL DEFAULT '' CHECK(type IN ('活钱账户', '理财账户', '定期账户', '欠款账户')),
+        type TEXT NOT NULL DEFAULT '' CHECK(type IN ('活钱账户', '理财账户', '定期账户', '欠款账户', '其他')),
         icon TEXT,
         balance REAL DEFAULT 0,
         note TEXT,
@@ -230,7 +233,7 @@ function initTables(database: Database): void {
     console.log('account 表已存在，跳过创建');
     // account 增量迁移：补齐新增字段
     if (!columnExists(database, 'account', 'type')) {
-      database.exec(`ALTER TABLE account ADD COLUMN type TEXT NOT NULL DEFAULT '' CHECK(type IN ('活钱账户', '理财账户', '定期账户', '欠款账户'));`);
+      database.exec(`ALTER TABLE account ADD COLUMN type TEXT NOT NULL DEFAULT '' CHECK(type IN ('活钱账户', '理财账户', '定期账户', '欠款账户', '其他'));`);
       console.log('account 表已新增 type 字段');
     }
     if (!columnExists(database, 'account', 'note')) {

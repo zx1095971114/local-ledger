@@ -1,18 +1,22 @@
 import * as XLSX from "xlsx";
-import type { Bill } from "../../../shared/domain/do";
+import type { Bill, BillCategory, Account } from "../../../shared/domain/do";
 import dayjs from "dayjs";
 import customParseFormat from 'dayjs/plugin/customParseFormat'
 import * as result from '../../../shared/domain/result'
 import * as billDao from '../database/billDao'
-import { BillQuery, BillView } from "../../../shared/domain/dto";
+import * as accountDao from '../database/accountDao'
+import * as categoryDao from '../database/billCategoryDao'
+import { getDatabase } from '../database/db';
+import type { BillQuery, BillView } from "../../../shared/domain/dto";
 import { Page } from "../../../shared/domain/page";
 import { toBillViewList } from '../converter/billConverter';
 
 export function list(query: BillQuery): Page<BillView> {
   const pageResult = billDao.list(query);
+  let billViews = toBillViewList(pageResult.rows ?? []);
   return {
     ...pageResult,
-    rows: toBillViewList(pageResult.rows ?? [])
+    rows: billViews
   };
 }
 
@@ -24,14 +28,13 @@ export function createBill(bill: Bill): number {
   return billDao.insertBill(bill);
 }
 
-
-/** Excel 日期序列号转 JS Date（Excel 的 1 = 1900-01-01） */
+/** Excel 日期序列号转 JS Date */
 function excelSerialToDate(serial: number): Date {
   const utc = (serial - 25569) * 86400 * 1000;
   return new Date(utc);
 }
 
-/** Excel 行数据（表头为中文）；raw:true 时日期可能是 number(序列号) 或 string，金额为 number */
+/** Excel 行数据 */
 interface ExcelBillRow {
   日期?: string | number;
   收支类型?: string;
@@ -49,110 +52,172 @@ interface ExcelBillRow {
   创建用户?: string;
   优惠?: number;
   其他?: string;
-  附件1?: string;
-  附件2?: string;
-  附件3?: string;
-  附件4?: string;
-  附件5?: string;
+}
+
+type CategoryCacheKey = string;
+type AccountCacheKey = string;
+
+function loadAllCategories(): Map<CategoryCacheKey, number> {
+  const cache = new Map<CategoryCacheKey, number>();
+  for (const cat of categoryDao.list({})) {
+    const key = cat.parent_id != null
+      ? `${cat.name}:${cat.type}:${cat.level}:${cat.parent_id}`
+      : `${cat.name}:${cat.type}:${cat.level}`;
+    cache.set(key, cat.id!);
+  }
+  return cache;
+}
+
+function loadAllAccounts(): Map<AccountCacheKey, Account> {
+  const cache = new Map<AccountCacheKey, Account>();
+  for (const acc of accountDao.list({})) {
+    cache.set(acc.name, acc);
+  }
+  return cache;
+}
+
+function findOrCreateCategory(
+  name: string,
+  type: '收入' | '支出',
+  level: 0 | 1,
+  parentId: number | null,
+  cache: Map<CategoryCacheKey, number>
+): number {
+  const key = parentId != null
+    ? `${name}:${type}:${level}:${parentId}`
+    : `${name}:${type}:${level}`;
+
+  if (cache.has(key)) return cache.get(key)!;
+
+  const newCategory: BillCategory = { name, type, level, parent_id: parentId };
+  categoryDao.insert(newCategory);
+  const newId = newCategory.id!;
+  cache.set(key, newId);
+  return newId;
+}
+
+function findOrCreateAccount(name: string, cache: Map<AccountCacheKey, Account>): Account {
+  if (cache.has(name)) return cache.get(name)!;
+
+  const newAccount: Account = { name, type: '其他', balance: 0, note: '', sort_order: 0 };
+  accountDao.insert(newAccount);
+  cache.set(name, newAccount);
+  return newAccount;
+}
+
+function isEmpty(v: unknown): boolean {
+  return v == null || (typeof v === 'string' && v.trim() === '') || (typeof v === 'number' && isNaN(v));
+}
+
+function parseExcelRows(file: ArrayBuffer): ExcelBillRow[] {
+  const workbook = XLSX.read(file, { type: "buffer" });
+  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+  const rawRows = XLSX.utils.sheet_to_json<ExcelBillRow>(sheet, { raw: true, defval: "" });
+  return rawRows.filter(row => row != null && Object.values(row).some(v => !isEmpty(v)));
+}
+
+function numOrNull(v: unknown): number | null {
+  return v != null && typeof v === "number" && !isNaN(v) ? v : null;
+}
+
+function strOrNull(v: unknown): string | null {
+  return v != null && typeof v === "string" && v.trim() !== "" ? v.trim() : null;
 }
 
 /**
- * 将 Excel 行数据映射为 Bill 实体
+ * 解析 Excel 行并插入数据库
+ * @returns 成功返回 void，失败抛出错误
  */
-function mapRowToBill(row: ExcelBillRow): Bill | null {
+function importSingleRow(
+  row: ExcelBillRow,
+  categoryCache: Map<CategoryCacheKey, number>,
+  accountCache: Map<AccountCacheKey, Account>
+): void {
+  // 解析必填字段
   const dateRaw = row.日期;
-  const type = typeof row.收支类型 === "string" ? row.收支类型?.trim() : "";
+  const typeRaw = typeof row.收支类型 === "string" ? row.收支类型?.trim() : "";
   const amount = row.金额;
 
-  // 跳过空行：日期、收支类型、金额任一为空则忽略
-  if (dateRaw == null || dateRaw === "" || !type || amount == null || typeof amount !== "number" || isNaN(amount)) {
-    return null;
+  if (!dateRaw || !typeRaw || amount == null || typeof amount !== "number" || isNaN(amount)) {
+    throw new Error("必填字段（日期、收支类型、金额）无效");
+  }
+  if (typeRaw !== "收入" && typeRaw !== "支出") {
+    throw new Error(`收支类型无效: ${typeRaw}`);
   }
 
-  // 收支类型校验
-  if (type !== "收入" && type !== "支出") {
-    return null;
+  const date = typeof dateRaw === "number"
+    ? excelSerialToDate(dateRaw)
+    : dayjs(dateRaw.trim(), "YYYY-MM-DD HH:mm").toDate();
+
+  const accountName = row.账户?.trim() || "";
+  if (!accountName) throw new Error("账户不能为空");
+
+  const categoryName = strOrNull(row.类别);
+  const subcategoryName = strOrNull(row.子类);
+  if (subcategoryName && !categoryName) throw new Error("存在子类别但未指定父类别");
+
+  const type = typeRaw as "收入" | "支出";
+
+  // 查找或创建类别
+  let categoryId: number | null = null;
+  let subcategoryId: number | null = null;
+  if (categoryName) {
+    categoryId = findOrCreateCategory(categoryName, type, 0, null, categoryCache);
+  }
+  if (subcategoryName) {
+    subcategoryId = findOrCreateCategory(subcategoryName, type, 1, categoryId, categoryCache);
   }
 
-  let realDate: Date;
-  if (typeof dateRaw === "number") {
-    realDate = excelSerialToDate(dateRaw);
-  } else {
-    dayjs.extend(customParseFormat);
-    realDate = dayjs(dateRaw.trim(), "YYYY-MM-DD HH:mm").toDate();
-  }
+  // 查找或创建账户并扣除余额
+  const account = findOrCreateAccount(accountName, accountCache);
+  account.balance -= amount;
+  accountDao.updateById(account);
 
-  const numOrNull = (v: unknown): number | null =>
-    v != null && typeof v === "number" && !isNaN(v) ? v : null;
-
-  return {
-    date: realDate,
-    type: type as "收入" | "支出",
+  // 构建并插入账单
+  const bill: Bill = {
+    date,
+    type,
     amount,
-    category: row.类别?.trim() || null,
-    subcategory: row.子类?.trim() || null,
-    account: row.账户?.trim() || null,
-    ledger: row.账本?.trim() || null,
-    reimbursement_account: row.报销账户?.trim() || null,
+    category: categoryId,
+    subcategory: subcategoryId,
+    account: account.id!,
+    ledger: strOrNull(row.账本),
+    reimbursement_account: strOrNull(row.报销账户),
     reimbursement_amount: numOrNull(row.报销金额),
     refund_amount: numOrNull(row.退款金额),
-    note: row.备注?.trim() || null,
-    tags: row.标签?.trim() || null,
-    address: row.地址?.trim() || null,
-    created_user: row.创建用户?.trim() || null,
+    note: strOrNull(row.备注),
+    tags: strOrNull(row.标签),
+    address: strOrNull(row.地址),
+    created_user: strOrNull(row.创建用户),
     discount: numOrNull(row.优惠),
-    other: row.其他?.trim() || null
+    other: strOrNull(row.其他)
   };
+
+  billDao.insertBill(bill);
 }
 
 /**
  * 从 Excel 中导入账单数据
- * @param file Excel 文件 buffer（支持 .xls、.xlsx、.csv）
- * @returns 解析后的 Bill 数组，空行和无效行会被过滤
  */
-export function importBill(file: ArrayBuffer): result.Result<any>{
-  const workbook = XLSX.read(file, { type: "buffer" });
-  const sheetName = workbook.SheetNames[0];
-  const sheet = workbook.Sheets[sheetName];
+export function importBill(file: ArrayBuffer): result.Result<any> {
+  const rows = parseExcelRows(file);
+  const categoryCache = loadAllCategories();
+  const accountCache = loadAllAccounts();
+  const db = getDatabase();
+  const errors: string[] = [];
 
-  // raw: true → 数字列保持为 number（金额不会变成 '8,772.46'）；日期列为 Excel 序列号时在 mapRowToBill 中转换
-  const rawRows = XLSX.utils.sheet_to_json<ExcelBillRow>(sheet, {
-    raw: true,
-    defval: "",
-  });
-  /** 判断值是否为空（null、undefined、空字符串、NaN） */
-  const isEmpty = (v: unknown): boolean =>
-    v == null || (typeof v === 'string' && v.trim() === '') || (typeof v === 'number' && isNaN(v))
-
-  /** 过滤掉所有字段均为空的行 */
-  const rows = rawRows.filter((row): row is ExcelBillRow => {
-    if (row == null) return false
-    return Object.values(row).some(v => !isEmpty(v))
-  })
-
-
-  let failBill: any[] = []
   for (let i = 0; i < rows.length; i++) {
-    try{
-      let row = rows[i];
-      const bill = mapRowToBill(row);
-      if(bill){
-        billDao.insertBill(bill)
-      }
-    }catch (e){
-      console.log("导入失败", e)
-      failBill.push({
-        row: i + 2, // +2: 0-based index + 表头行
-        error: e instanceof Error ? e.message : String(e)
-      })
+    try {
+      db.transaction(() => importSingleRow(rows[i], categoryCache, accountCache))();
+    } catch (e) {
+      errors.push(`第${i + 2}行: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 
-  let errorReason = failBill.map((item, index) => {
-    return `${index}. 第${item.row}行：${item.error}`
-  }).join("\n");
-  let msg = `共导入${rows.length}条，其中成功${rows.length - failBill.length}条，失败${failBill.length}条，失败原因：\n${errorReason}`;
+  const successCount = rows.length - errors.length;
+  const msg = errors.length === 0
+    ? `共导入${rows.length}条，全部成功`
+    : `共导入${rows.length}条，成功${successCount}条，失败${errors.length}条，失败原因：\n${errors.join("\n")}`;
 
   return result.ok(msg);
-
 }

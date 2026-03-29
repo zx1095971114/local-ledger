@@ -66,6 +66,7 @@ import BillTransferFields from './components/BillTransferFields.vue'
 import BillCommonFields from './components/BillCommonFields.vue'
 import { useBillFormState, saveLastTxType, clearTypeSpecificFields } from './composables/useBillFormState'
 import { getMockBillForEdit } from './mock/billFormMock'
+import type { AccountView } from '../../../shared/domain/dto'
 
 const props = defineProps<{
   modelValue: boolean
@@ -83,13 +84,13 @@ const modeComputed = computed(() => props.mode)
 
 const { form, markDirty, applyEditPayload, resetAfterSave } = useBillFormState(visibleComputed, modeComputed)
 
-const accounts = ref<string[]>([])
+const accounts = ref<AccountView[]>([])
 
 async function loadAccounts() {
   try {
     const result = await window.accountController.list({})
     if (result.code === 200 && result.data) {
-      accounts.value = result.data.map(a => a.name)
+      accounts.value = result.data
     }
   } catch (e) {
     console.error('加载账户失败', e)
@@ -168,16 +169,16 @@ function validate(): boolean {
       ElMessage.warning('请选择二级子类')
       return false
     }
-    if (!form.account?.trim()) {
+    if (!form.account?.name?.trim()) {
       ElMessage.warning('请选择账户')
       return false
     }
   } else {
-    if (!form.accountFrom?.trim() || !form.accountTo?.trim()) {
+    if (!form.accountFrom?.name?.trim() || !form.accountTo?.name?.trim()) {
       ElMessage.warning('请选择转出与转入账户')
       return false
     }
-    if (form.accountFrom === form.accountTo) {
+    if (form.accountFrom?.name === form.accountTo?.name) {
       ElMessage.warning('转出与转入账户不能相同')
       return false
     }
@@ -193,18 +194,13 @@ async function onSave() {
       amount: form.amount,
       date: form.date,
       note: form.note || null,
-      account: form.account || null
+      account: form.account?.id ?? null
     }
-    // 支出/收入：使用 categoryId/subcategoryId 获取类别名称
-    // 转账：使用 accountFrom/accountTo
     if (form.txType === '支出' || form.txType === '收入') {
-      // category/subcategory 需要通过 ID 查询获取名称
-      // 目前简化为直接使用 ID，待后续优化
-      bill.category = form.categoryId?.toString() ?? null
-      bill.subcategory = form.subcategoryId?.toString() ?? null
+      bill.category = form.categoryId ?? null
+      bill.subcategory = form.subcategoryId ?? null
     } else {
-      // 转账场景
-      bill.account = form.accountFrom || null
+      bill.account = form.accountFrom?.id ?? null
     }
     const result = await window.billController.create(bill)
     if (result.code === 200) {

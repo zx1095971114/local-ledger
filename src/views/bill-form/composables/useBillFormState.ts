@@ -1,5 +1,7 @@
 import { reactive, watch, type Ref, type ComputedRef } from 'vue'
 import type { BillFormTxType } from '../types'
+import {AccountView} from "../../../../shared/domain/dto";
+
 
 const LS_LAST_TX = 'billForm.lastTxType'
 
@@ -8,9 +10,9 @@ export interface BillFormFields {
   amount: number | null
   date: Date
   note: string
-  account: string
-  accountFrom: string
-  accountTo: string
+  account: AccountView | null
+  accountFrom: AccountView | null
+  accountTo: AccountView | null
   categoryId: number | null
   subcategoryId: number | null
   dirty: boolean
@@ -40,9 +42,9 @@ export function createEmptyForm(): BillFormFields {
     amount: null,
     date: new Date(),
     note: '',
-    account: '',
-    accountFrom: '',
-    accountTo: '',
+    account: null,
+    accountFrom: null,
+    accountTo: null,
     categoryId: null,
     subcategoryId: null,
     dirty: false
@@ -53,9 +55,9 @@ export function createEmptyForm(): BillFormFields {
 export function clearTypeSpecificFields(form: BillFormFields) {
   form.categoryId = null
   form.subcategoryId = null
-  form.account = ''
-  form.accountFrom = ''
-  form.accountTo = ''
+  form.account = null
+  form.accountFrom = null
+  form.accountTo = null
   form.dirty = true
 }
 

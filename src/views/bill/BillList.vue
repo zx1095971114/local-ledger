@@ -46,6 +46,15 @@
                 class="filter-control-wide"
               />
             </el-form-item>
+            <el-form-item label="子类">
+              <el-input
+                v-model="filterForm.subcategory"
+                placeholder="请输入子类"
+                clearable
+                size="large"
+                class="filter-control-wide"
+              />
+            </el-form-item>
           </div>
           <div class="filter-actions">
             <el-button type="primary" :icon="Search" @click="handleSearch">
@@ -97,9 +106,9 @@
               </span>
             </template>
           </el-table-column>
-          <el-table-column prop="category" label="类别" width="120" />
-          <el-table-column prop="subcategory" label="子类" width="120" />
-          <el-table-column prop="account" label="账户" width="120" />
+          <el-table-column prop="category.name" label="类别" width="120" />
+          <el-table-column prop="subcategory.name" label="子类" width="120" />
+          <el-table-column prop="account.name" label="账户" width="120" />
           <el-table-column prop="note" label="备注" show-overflow-tooltip />
           <el-table-column label="操作" width="150" fixed="right">
             <template #default="{ row }">
@@ -171,6 +180,7 @@ const filterForm = ref({
   dateRange: null as [Date, Date] | null,
   type: '',
   category: '',
+  subcategory: '',
   /** 与账户页穿透一致；主进程 list 未按账户筛选前仅作展示与联调预留 */
   account: ''
 })
@@ -230,6 +240,7 @@ const loadBills = async () => {
       dateTo: filterForm.value.dateRange?.[1],
       type: typeValue === '收入' || typeValue === '支出' ? typeValue : undefined,
       category: filterForm.value.category || undefined,
+      subcategory: filterForm.value.subcategory || undefined,
       account: filterForm.value.account?.trim() || undefined
     }
 
@@ -260,6 +271,7 @@ const handleReset = () => {
     dateRange: null,
     type: '',
     category: '',
+    subcategory: '',
     account: ''
   }
   handleSearch()
@@ -283,10 +295,38 @@ function applyAccountFromRouteQuery() {
   }
 }
 
+function applyFilterFromRouteQuery() {
+  // type
+  const typeQ = route.query.type
+  if (typeQ && typeof typeQ === 'string' && (typeQ === '收入' || typeQ === '支出')) {
+    filterForm.value.type = typeQ
+  }
+
+  // dateFrom / dateTo
+  const dateFromQ = route.query.dateFrom
+  const dateToQ = route.query.dateTo
+  if (dateFromQ && dateToQ && typeof dateFromQ === 'string' && typeof dateToQ === 'string') {
+    filterForm.value.dateRange = [new Date(dateFromQ), new Date(dateToQ)]
+  }
+
+  // category
+  const catQ = route.query.category
+  if (catQ && typeof catQ === 'string') {
+    filterForm.value.category = catQ
+  }
+
+  // subcategory
+  const subQ = route.query.subcategory
+  if (subQ && typeof subQ === 'string') {
+    filterForm.value.subcategory = subQ
+  }
+}
+
 watch(
-  () => route.query.account,
+  () => [route.query.account, route.query.type, route.query.dateFrom, route.query.dateTo, route.query.category, route.query.subcategory],
   () => {
     applyAccountFromRouteQuery()
+    applyFilterFromRouteQuery()
     pagination.value.page = 1
     loadBills()
   }
@@ -327,6 +367,7 @@ const handleDelete = async (row: any) => {
 
 onMounted(() => {
   applyAccountFromRouteQuery()
+  applyFilterFromRouteQuery()
   loadBills()
 })
 </script>

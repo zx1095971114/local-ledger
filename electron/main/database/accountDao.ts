@@ -3,12 +3,13 @@ import {Account} from "../../../shared/domain/do";
 import {getDatabase} from "./db";
 import {PortableOptions} from "electron-builder";
 
-/** update时手动改的key */
+/** update时手动改的key（包含软删除） */
 const UPDATE_KEYS = ["name", "icon", "balance", "type", "note", "sort_order", "is_deleted"] as const;
 /** 时间相关字段 */
 const CREATED_AT = "created_at" as const;
 const UPDATED_AT = "updated_at" as const;
-const INSERT_KEYS = [...UPDATE_KEYS, CREATED_AT, UPDATED_AT] as const;
+/** 插入时不包含 is_deleted（由数据库默认值为 0） */
+const INSERT_KEYS = ["name", "icon", "balance", "type", "note", "sort_order", CREATED_AT, UPDATED_AT] as const;
 const ALL_KEYS = ["id", ...INSERT_KEYS] as const;
 const allFields = ALL_KEYS.join(", ");
 

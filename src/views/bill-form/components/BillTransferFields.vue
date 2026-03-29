@@ -3,13 +3,13 @@
     <div class="transfer-row">
       <span class="label">转出账户</span>
       <el-select
-        :model-value="accountFrom"
+        :model-value="accountFrom?.name ?? ''"
         placeholder="请选择"
         filterable
         class="field"
         @update:model-value="onFrom"
       >
-        <el-option v-for="a in accounts" :key="a" :label="a" :value="a" />
+        <el-option v-for="a in accounts" :key="a.id" :label="a.name" :value="a.name" />
       </el-select>
     </div>
     <div class="swap-wrap">
@@ -18,13 +18,13 @@
     <div class="transfer-row">
       <span class="label">转入账户</span>
       <el-select
-        :model-value="accountTo"
+        :model-value="accountTo?.name ?? ''"
         placeholder="请选择"
         filterable
         class="field"
         @update:model-value="onTo"
       >
-        <el-option v-for="a in accounts" :key="a" :label="a" :value="a" />
+        <el-option v-for="a in accounts" :key="a.id" :label="a.name" :value="a.name" />
       </el-select>
     </div>
   </div>
@@ -32,24 +32,29 @@
 
 <script setup lang="ts">
 import { Sort } from '@element-plus/icons-vue'
+import type { AccountView } from '../../../shared/domain/dto'
 
 const props = defineProps<{
-  accountFrom: string
-  accountTo: string
-  accounts: string[]
+  accountFrom: AccountView | null
+  accountTo: AccountView | null
+  accounts: AccountView[]
 }>()
 
 const emit = defineEmits<{
-  'update:accountFrom': [string]
-  'update:accountTo': [string]
+  'update:accountFrom': [AccountView | null]
+  'update:accountTo': [AccountView | null]
 }>()
 
-function onFrom(v: string) {
-  emit('update:accountFrom', v)
+function findAccount(name: string): AccountView | null {
+  return props.accounts.find(a => a.name === name) ?? null
 }
 
-function onTo(v: string) {
-  emit('update:accountTo', v)
+function onFrom(name: string) {
+  emit('update:accountFrom', findAccount(name))
+}
+
+function onTo(name: string) {
+  emit('update:accountTo', findAccount(name))
 }
 
 function swap() {
