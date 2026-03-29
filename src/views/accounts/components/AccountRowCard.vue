@@ -29,17 +29,17 @@
 
 <script setup lang="ts">
 import { Edit, Document, Delete } from '@element-plus/icons-vue'
-import type { AccountManageView } from '../types'
+import type { AccountView } from '../types'
 import { formatMoney } from '../utils/formatMoney'
 
 defineProps<{
-  row: AccountManageView
+  row: AccountView
 }>()
 
 const emit = defineEmits<{
-  edit: [row: AccountManageView]
-  delete: [row: AccountManageView]
-  'go-bills': [row: AccountManageView]
+  edit: [row: AccountView]
+  delete: [row: AccountView]
+  'go-bills': [row: AccountView]
 }>()
 </script>
 

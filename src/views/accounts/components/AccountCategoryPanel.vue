@@ -62,7 +62,7 @@
 import { computed } from 'vue'
 import AccountPieChart from './AccountPieChart.vue'
 import AccountRowCard from './AccountRowCard.vue'
-import type { AccountGroupBlock, AccountManageView } from '../types'
+import type { AccountGroupBlock, AccountView } from '../types'
 import { formatMoney } from '../utils/formatMoney'
 
 const props = defineProps<{
@@ -71,9 +71,9 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  edit: [row: AccountManageView]
-  delete: [row: AccountManageView]
-  'go-bills': [row: AccountManageView]
+  edit: [row: AccountView]
+  delete: [row: AccountView]
+  'go-bills': [row: AccountView]
 }>()
 
 const chartHeight = computed(() => {

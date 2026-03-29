@@ -1,10 +1,10 @@
 import {ipcMain} from "electron";
 import {error, Result} from "../../../shared/domain/result";
-import {AccountManageView, AccountQuery} from "../../../shared/domain/dto";
+import {AccountView, AccountQuery} from "../../../shared/domain/dto";
 import type { Account } from "../../../shared/domain/do";
 import * as accountService from "../service/accountService"
 
-ipcMain.handle("account:list", (_event, query: AccountQuery): Result<AccountManageView[]> => {
+ipcMain.handle("account:list", (_event, query: AccountQuery): Result<AccountView[]> => {
     try {
         return { code: 200, msg: "查询成功", data: accountService.list(query || {}) }
     }catch (e){

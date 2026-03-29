@@ -1,7 +1,7 @@
 import { getDatabase } from "./db";
 import type { Bill } from "../../../shared/domain/do";
 import {Page, transToOffsetWay, transToCurrentWay, Order} from "../../../shared/domain/page";
-import {BillQuery, BillView} from "../../../shared/domain/dto";
+import {BillQuery} from "../../../shared/domain/dto";
 import {handleOrder} from "./dbUtils";
 
 const commonFields = `
@@ -94,7 +94,7 @@ export function list(query: BillQuery): Page<Bill>{
 
     const db = getDatabase();
     let count = db.prepare(countQuery).get(...params).total as number;
-    let list = db.prepare(listQuery).all(...params) as BillView[];
+    let list = db.prepare(listQuery).all(...params) as Bill[];
     let currentWay = transToCurrentWay(mysqlPage);
     return {
       current: currentWay.current,
@@ -107,10 +107,10 @@ export function list(query: BillQuery): Page<Bill>{
     let listQuery = `${selectStmt}
     WHERE 1 = 1
     ${condition}
-    ${orderByClause} 
+    ${orderByClause}
     `;
     const db = getDatabase();
-    let list = db.prepare(listQuery).all(...params) as BillView[];
+    let list = db.prepare(listQuery).all(...params) as Bill[];
     return {
       total: list.length,
       rows: list,

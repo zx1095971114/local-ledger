@@ -126,12 +126,12 @@ import AccountPieChart from './components/AccountPieChart.vue'
 import AccountCategoryPanel from './components/AccountCategoryPanel.vue'
 import AccountFormDialog from './components/AccountFormDialog.vue'
 import { loadAccounts, createAccount, updateAccount, deleteAccount } from './accountStorage'
-import type { AccountManageView, AccountSortMode } from './types'
+import type { AccountView, AccountSortMode } from './types'
 import { formatMoney } from './utils/formatMoney'
 
 const router = useRouter()
 
-const accounts = ref<AccountManageView[]>([])
+const accounts = ref<AccountView[]>([])
 const loading = ref(false)
 const keyword = ref('')
 const sortMode = ref<AccountSortMode>('sort_order')
@@ -167,7 +167,7 @@ const filteredAccounts = computed(() => {
   )
 })
 
-function compareInGroup(a: AccountManageView, b: AccountManageView): number {
+function compareInGroup(a: AccountView, b: AccountView): number {
   switch (sortMode.value) {
     case 'name':
       return a.name.localeCompare(b.name, 'zh-CN')
@@ -188,7 +188,7 @@ function groupLabel(typeRaw: string) {
 }
 
 const groupedAccounts = computed(() => {
-  const map = new Map<string, AccountManageView[]>()
+  const map = new Map<string, AccountView[]>()
   for (const a of filteredAccounts.value) {
     const label = groupLabel(a.type)
     if (!map.has(label)) map.set(label, [])
@@ -264,7 +264,7 @@ onBeforeUnmount(() => {
   mq?.removeEventListener('change', updateNarrow)
 })
 
-function goBills(row: AccountManageView) {
+function goBills(row: AccountView) {
   router.push({
     path: '/bills',
     query: { account: encodeURIComponent(row.name) }
@@ -275,11 +275,11 @@ function openCreateAccount() {
   accountFormRef.value?.openCreate()
 }
 
-function onEditAccount(row: AccountManageView) {
+function onEditAccount(row: AccountView) {
   accountFormRef.value?.openEdit(row)
 }
 
-async function handleDelete(row: AccountManageView) {
+async function handleDelete(row: AccountView) {
   try {
     await ElMessageBox.confirm(`确定删除账户「${row.name}」？`, '提示', { type: 'warning' })
   } catch {

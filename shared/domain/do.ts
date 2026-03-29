@@ -12,7 +12,7 @@ export interface Bill {
   amount?: number | null; // 金额
   category?: number | null; // 类别
   subcategory?: number | null; // 子类
-  account?: string | null; // 账户
+  account?: number | null; // 账户
   ledger?: string | null; // 账本
   reimbursement_account?: string | null; // 报销账户
   reimbursement_amount?: number | null; // 报销金额

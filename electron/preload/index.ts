@@ -1,6 +1,6 @@
 import { ipcRenderer, contextBridge } from 'electron'
 import {Result} from "../../shared/domain/result";
-import {AccountManageView, AccountQuery, BillQuery, BillView, BillCategoryQuery} from "../../shared/domain/dto";
+import {AccountView, AccountQuery, BillQuery, BillView, BillCategoryQuery} from "../../shared/domain/dto";
 import {Page} from "../../shared/domain/page";
 import type { Account, Bill, BillCategory } from "../../shared/domain/do";
 
@@ -58,7 +58,7 @@ contextBridge.exposeInMainWorld('categoryController', {
 })
 
 contextBridge.exposeInMainWorld('accountController', {
-  list: (query: AccountQuery): Promise<Result<AccountManageView[]>> => {
+  list: (query: AccountQuery): Promise<Result<AccountView[]>> => {
     return ipcRenderer.invoke('account:list', query)
   },
   create: (account: Account): Promise<Result<void>> => {

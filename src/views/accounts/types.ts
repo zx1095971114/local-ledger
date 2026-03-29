@@ -1,6 +1,6 @@
-import type { AccountManageView } from '../../../shared/domain/dto'
+import type { AccountView } from '../../../shared/domain/dto'
 
-export type { AccountManageView }
+export type { AccountView }
 
 export type AccountSortMode = 'sort_order' | 'name' | 'balance_desc'
 
@@ -10,7 +10,7 @@ export const ACCOUNT_TYPE_PRESETS = ['活钱账户', '理财账户', '定期账�
 export interface AccountGroupBlock {
   key: string
   label: string
-  items: AccountManageView[]
+  items: AccountView[]
   pieItems: { name: string; value: number }[]
   hasNegative: boolean
   groupNet: number

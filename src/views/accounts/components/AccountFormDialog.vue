@@ -47,7 +47,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import type { FormInstance, FormRules } from 'element-plus'
-import type { AccountManageView } from '../types'
+import type { AccountView } from '../types'
 import { ACCOUNT_TYPE_PRESETS } from '../types'
 
 const visible = defineModel<boolean>('visible', { default: false })
@@ -84,7 +84,7 @@ function openCreate() {
   visible.value = true
 }
 
-function openEdit(row: AccountManageView) {
+function openEdit(row: AccountView) {
   editingId.value = row.id ?? null
   form.value = {
     name: row.name,

@@ -1,10 +1,10 @@
-import type { AccountManageView } from '../../../shared/domain/dto'
+import type { AccountView } from '../../../shared/domain/dto'
 import type { Account } from '../../../shared/domain/do'
 
 /**
  * 从后端获取账户列表
  */
-export async function loadAccounts(): Promise<AccountManageView[]> {
+export async function loadAccounts(): Promise<AccountView[]> {
   const result = await window.accountController.list({})
   if (result.code === 200 && result.data) {
     return result.data

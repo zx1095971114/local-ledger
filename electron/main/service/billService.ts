@@ -4,19 +4,16 @@ import dayjs from "dayjs";
 import customParseFormat from 'dayjs/plugin/customParseFormat'
 import * as result from '../../../shared/domain/result'
 import * as billDao from '../database/billDao'
-import {BillQuery, BillView} from "../../../shared/domain/dto";
-import {Page} from "../../../shared/domain/page";
-import * as categoryDao from '../database/billCategoryDao'
+import { BillQuery, BillView } from "../../../shared/domain/dto";
+import { Page } from "../../../shared/domain/page";
+import { toBillViewList } from '../converter/billConverter';
 
 export function list(query: BillQuery): Page<BillView> {
-  let bills = billDao.list(query);
-  bills?.rows?.forEach(bill =>{
-    if(bill.category){
-      let category = categoryDao.getById(bill.category)
-
-    }
-  })
-  return
+  const pageResult = billDao.list(query);
+  return {
+    ...pageResult,
+    rows: toBillViewList(pageResult.rows ?? [])
+  };
 }
 
 export function deleteBill(id: number): void {

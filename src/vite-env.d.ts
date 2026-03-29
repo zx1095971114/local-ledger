@@ -9,7 +9,7 @@ declare module '*.vue' {
 }
 
 import type { Result } from '../shared/domain/result'
-import {BillView, BillQuery, AccountManageView, AccountQuery, BillCategoryQuery} from "../shared/domain/dto";
+import {BillView, BillQuery, AccountView, AccountQuery, BillCategoryQuery} from "../shared/domain/dto";
 import type { Account, Bill, BillCategory } from "../shared/domain/do";
 
 interface BillController {
@@ -20,7 +20,7 @@ interface BillController {
 }
 
 interface AccountController {
-  list: (query: AccountQuery) => Promise<Result<AccountManageView[]>>,
+  list: (query: AccountQuery) => Promise<Result<AccountView[]>>,
   create: (account: Account) => Promise<Result<void>>,
   update: (account: Account) => Promise<Result<void>>,
   delete: (id: number) => Promise<Result<void>>
