@@ -38,6 +38,7 @@ export interface BillCategory {
   parent_id?: number | null; // 父类别ID，NULL表示顶级类别
   type: '收入' | '支出'; // 收支类型
   created_at?: string; // 创建时间
+  level?: number; // 目录层级，0表示一级目录，1表示有父级，依次类推
 }
 
 /**

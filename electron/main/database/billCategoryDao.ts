@@ -6,7 +6,9 @@ import {getDatabase} from "./db";
 const UPDATE_KEYS = ["name", "parent_id", "type"] as const;
 /** 时间相关字段 */
 const CREATED_AT = "created_at" as const;
-const INSERT_KEYS = [...UPDATE_KEYS, CREATED_AT] as const;
+/** level字段（由系统自动计算，不允许手动更新） */
+const LEVEL_KEY = "level" as const;
+const INSERT_KEYS = [...UPDATE_KEYS, CREATED_AT, LEVEL_KEY] as const;
 const ALL_KEYS = ["id", ...INSERT_KEYS] as const;
 const allFields = ALL_KEYS.join(", ");
 
@@ -33,7 +35,41 @@ function insertParamsForKey(category: BillCategory, key: (typeof ALL_KEYS)[numbe
     if (key === CREATED_AT) {
         return raw ?? new Date().toISOString();
     }
+    if (key === LEVEL_KEY) {
+        return raw ?? calculateLevel(category.parent_id);
+    }
     return raw;
+}
+
+/**
+ * 根据 parent_id 计算 level
+ * parent_id 为 null/undefined 时返回 0（顶级目录）
+ * 否则查询父记录的 level 并加 1
+ */
+function calculateLevel(parentId: number | null | undefined): number {
+    if (parentId === null || parentId === undefined) {
+        return 0;
+    }
+    const parent = getById(parentId);
+    return parent ? (parent.level ?? 0) + 1 : 0;
+}
+
+/**
+ * 递归更新所有子级的 level
+ * 当某记录的 parent_id 变更时调用
+ */
+function updateChildrenLevel(parentId: number, parentLevel: number): void {
+    const db = getDatabase();
+    const children = db.prepare(`
+        SELECT id, parent_id FROM bill_category WHERE parent_id = ?
+    `).all(parentId) as BillCategory[];
+
+    for (const child of children) {
+        const childLevel = parentLevel + 1;
+        db.prepare(`UPDATE bill_category SET level = ? WHERE id = ?`).run(childLevel, child.id);
+        // 递归更新子级的子级
+        updateChildrenLevel(child.id, childLevel);
+    }
 }
 
 const deleteStmt = `
@@ -91,6 +127,12 @@ export function updateById(category: BillCategory): void {
     }
     const id = category.id;
 
+    // 获取旧数据，用于检测 parent_id 是否变更
+    const oldCategory = getById(id);
+    if (!oldCategory) {
+        return;
+    }
+
     const assignments: string[] = [];
     const params: unknown[] = [];
     for (const key of UPDATE_KEYS) {
@@ -108,10 +150,30 @@ export function updateById(category: BillCategory): void {
 
     const sql = `UPDATE bill_category SET ${assignments.join(", ")} WHERE id = ?`;
     const db = getDatabase();
-    const result = db.prepare(sql).run(...params);
-    if (result.changes < 1) {
-        throw new Error("更新账单类别失败，请稍后重试");
-    }
+
+    // 检测 parent_id 是否变更
+    const newParentId = category.parent_id;
+    const oldParentId = oldCategory.parent_id;
+    const parentIdChanged = newParentId !== oldParentId;
+
+    // 使用事务保证一致性：更新当前记录 + 更新 level（自己和所有子级）要么全部成功，要么全部失败
+    const updateTransaction = db.transaction(() => {
+        const result = db.prepare(sql).run(...params);
+        if (result.changes < 1) {
+            throw new Error("更新账单类别失败，请稍后重试");
+        }
+
+        // parent_id 变更时，递归更新所有子级的 level
+        if (parentIdChanged) {
+            // 重新计算当前记录的 level
+            const newLevel = calculateLevel(newParentId);
+            db.prepare(`UPDATE bill_category SET level = ? WHERE id = ?`).run(newLevel, id);
+            // 递归更新所有子级的 level
+            updateChildrenLevel(id, newLevel);
+        }
+    });
+
+    updateTransaction();
 }
 
 export function deleteById(id: number): void {

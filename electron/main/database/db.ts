@@ -183,6 +183,7 @@ function initTables(database: Database): void {
         name TEXT NOT NULL,
         parent_id INTEGER,
         type TEXT NOT NULL CHECK(type IN ('收入', '支出')),
+        level INTEGER NOT NULL DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (parent_id) REFERENCES bill_category(id) ON DELETE CASCADE
       )
@@ -190,6 +191,11 @@ function initTables(database: Database): void {
     console.log('已创建 bill_category 表');
   } else {
     console.log('bill_category 表已存在，跳过创建');
+    // bill_category 增量迁移：补齐新增字段
+    if (!columnExists(database, 'bill_category', 'level')) {
+      database.exec(`ALTER TABLE bill_category ADD COLUMN level INTEGER NOT NULL DEFAULT 0;`);
+      console.log('bill_category 表已新增 level 字段');
+    }
   }
 
   database.exec(`
