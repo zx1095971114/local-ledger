@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /e/gitrepo/personal/local-ledger/electron-app/src -type f \\\\\\( -name \"*.ts\" -o -name \"*.tsx\" -o -name \"*.vue\" -o -name \"*.js\" -o -name \"*.json\" \\\\\\) 2>/dev/null | head -50)",
+      "Bash(find /e/gitrepo/personal/local-ledger/electron-app/electron/main -type f -name \"*.ts\" 2>/dev/null | grep -E \"\\(controller|service|dao\\)\" | head -20)"
+    ]
+  }
+}

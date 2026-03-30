@@ -1,0 +1,14 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="debug-electron" type="js.build_tools.npm">
+    <package-json value="$PROJECT_DIR$/electron-app/package.json" />
+    <command value="run" />
+    <scripts>
+      <script value="electron-debug" />
+    </scripts>
+    <node-interpreter value="project" />
+    <envs>
+      <env name="VITE_DEV_SERVER_URL" value="http://127.0.0.1:3344/" />
+    </envs>
+    <method v="2" />
+  </configuration>
+</component>

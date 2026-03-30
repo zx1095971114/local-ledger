@@ -1,0 +1,13 @@
+---
+alwaysApply: true
+---
+# Workdocs-First Collaboration Rules
+
+## Goals
+- Keep plans and todos in `doc/workdocs/` (single source of truth).
+
+## Folder per plan/update
+- Folder: `doc/workdocs/<yyyy-mm-dd>-<feature-key>/`
+- Files:
+  - `plan.md` – accepted plan snapshot
+  - `todos.md` – authoritative task list
