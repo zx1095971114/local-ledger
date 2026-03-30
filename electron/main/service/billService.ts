@@ -10,6 +10,7 @@ import { getDatabase } from '../database/db';
 import type { BillQuery, BillView } from "../../../shared/domain/dto";
 import { Page } from "../../../shared/domain/page";
 import { toBillViewList } from '../converter/billConverter';
+import { ACCOUNT_TYPE_DEFAULT } from '../../../shared/domain/consts';
 
 export function list(query: BillQuery): Page<BillView> {
   const pageResult = billDao.list(query);
@@ -99,7 +100,7 @@ function findOrCreateCategory(
 function findOrCreateAccount(name: string, cache: Map<AccountCacheKey, Account>): Account {
   if (cache.has(name)) return cache.get(name)!;
 
-  const newAccount: Account = { name, type: '其他', balance: 0, note: '', sort_order: 0 };
+  const newAccount: Account = { name, type: ACCOUNT_TYPE_DEFAULT, balance: 0, note: '', sort_order: 0 };
   accountDao.insert(newAccount);
   cache.set(name, newAccount);
   return newAccount;

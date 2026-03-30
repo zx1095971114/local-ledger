@@ -127,6 +127,7 @@ import AccountCategoryPanel from './components/AccountCategoryPanel.vue'
 import AccountFormDialog from './components/AccountFormDialog.vue'
 import { loadAccounts, createAccount, updateAccount, deleteAccount } from './accountStorage'
 import type { AccountView, AccountSortMode } from './types'
+import { ACCOUNT_TYPE_PRESETS, ACCOUNT_TYPE_DEFAULT } from '../../../shared/domain/consts'
 import { formatMoney } from './utils/formatMoney'
 
 const router = useRouter()
@@ -180,11 +181,11 @@ function compareInGroup(a: AccountView, b: AccountView): number {
   }
 }
 
-const GROUP_ORDER = ['活钱账户', '理财账户', '定期账户', '欠款账户', '未分类']
+const GROUP_ORDER = ACCOUNT_TYPE_PRESETS
 
 function groupLabel(typeRaw: string) {
   const t = typeRaw.trim()
-  return t || '未分类'
+  return t || ACCOUNT_TYPE_DEFAULT
 }
 
 const groupedAccounts = computed(() => {

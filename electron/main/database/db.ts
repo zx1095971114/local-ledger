@@ -3,8 +3,12 @@ import { join, dirname } from 'node:path';
 import { existsSync, mkdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { getConfig } from '../config/config';
+import { ACCOUNT_TYPE_PRESETS } from '../../../shared/domain/consts';
 
 // 使用 createRequire 来导入 better-sqlite3，确保在 ES modules 环境中正确加载
+// 注意：修改 ACCOUNT_TYPE_PRESETS 常量时需考虑数据库已有 CHECK 约束的兼容性。
+// 目前项目未上线，直接修改即可。
+const ACCOUNT_TYPE_CHECK = `CHECK(type IN (${ACCOUNT_TYPE_PRESETS.map((v) => `'${v}'`).join(', ')}))`;
 // 这样可以避免 __filename is not defined 的错误
 const require = createRequire(import.meta.url);
 const BetterSqlite3 = require('better-sqlite3');
@@ -218,7 +222,7 @@ function initTables(database: Database): void {
       CREATE TABLE account (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
-        type TEXT NOT NULL DEFAULT '' CHECK(type IN ('活钱账户', '理财账户', '定期账户', '欠款账户', '其他')),
+        type TEXT NOT NULL DEFAULT '' ${ACCOUNT_TYPE_CHECK},
         icon TEXT,
         balance REAL DEFAULT 0,
         note TEXT,
@@ -233,7 +237,7 @@ function initTables(database: Database): void {
     console.log('account 表已存在，跳过创建');
     // account 增量迁移：补齐新增字段
     if (!columnExists(database, 'account', 'type')) {
-      database.exec(`ALTER TABLE account ADD COLUMN type TEXT NOT NULL DEFAULT '' CHECK(type IN ('活钱账户', '理财账户', '定期账户', '欠款账户', '其他'));`);
+      database.exec(`ALTER TABLE account ADD COLUMN type TEXT NOT NULL DEFAULT '' ${ACCOUNT_TYPE_CHECK};`);
       console.log('account 表已新增 type 字段');
     }
     if (!columnExists(database, 'account', 'note')) {

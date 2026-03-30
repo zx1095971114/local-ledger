@@ -51,7 +51,7 @@ export interface Account {
   balance?: number; // 余额，默认0
   created_at?: string; // 创建时间
   updated_at?: string; // 更新时间
-  is_deleted?: boolean | null; // 软删除标记，true 表示已删除
+  is_deleted?: number | null; // 软删除标记，true 表示已删除
   type: string
   note: string
   sort_order: number
