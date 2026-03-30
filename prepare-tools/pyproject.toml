@@ -1,0 +1,15 @@
+[project]
+name = "xls-to-csv"
+version = "0.1.0"
+description = "简单的XLS转CSV工具"
+requires-python = ">=3.8"
+dependencies = [
+    "pandas>=1.3.0",
+    "xlrd>=2.0.0",
+    "openpyxl>=3.0.0",
+]
+
+[project.scripts]
+xls-to-csv = "xls_to_csv:main"
+
+
