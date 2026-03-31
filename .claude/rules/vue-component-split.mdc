@@ -1,0 +1,23 @@
+---
+description: Vue 页面初稿必须拆子组件，禁止单文件写全页
+globs: "**/*.vue"
+---
+
+# Vue 页面与组件拆分（全局）
+
+## 原则
+
+- **初稿阶段就要拆组件**，不要把整页 UI、弹窗表单、大块列表/卡片矩阵都写进同一个 `.vue`。
+- **禁止**「一个页面文件承担所有职责」：路由页只保留布局骨架、数据聚合与编排；可复用块、业务块、表单弹窗各自独立成组件。
+- **表单类（新增/编辑）**：对话框 + 校验 + 提交逻辑放在**专用组件**内（或通过 composable 仅被该组件引用），页面用 `ref` + `defineExpose` 或 `v-model` 与列表数据协作。
+- **按业务域拆目录**：例如 `views/accounts/components/` 下放 `AccountCategoryPanel.vue`、`AccountFormDialog.vue` 等；与页面强相关的块放在页面子目录，跨页复用再抽到 `src/components/`。
+
+## 参考实现
+
+- 账户管理：`electron-app/src/views/accounts/AccountManage.vue`（编排）+ `components/AccountFormDialog.vue`、`AccountCategoryPanel.vue`、`AccountRowCard.vue` 等。
+
+## 例外
+
+- 极简占位页（&lt; ~80 行且无弹窗/无表格）可暂不拆；一旦增加表单或复杂区块，立即抽出组件。
+
+更多说明见仓库内 `doc/accounts/vue-page-component-conventions.md`。

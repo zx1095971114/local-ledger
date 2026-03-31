@@ -103,6 +103,7 @@ import GlobalTimeRangePicker from './components/GlobalTimeRangePicker.vue'
 import PieChartCard from './components/PieChartCard.vue'
 import AssetTrendCard from './components/AssetTrendCard.vue'
 import type { DateRange } from './components/TimeRangePicker.vue'
+import {IncomeExpenseSummaryDTO} from "../../../shared/domain/dto";
 
 const router = useRouter()
 
@@ -132,80 +133,75 @@ const summaryData = reactive({
 })
 
 // 支出类别明细
-const expenseBreakdownData = ref([
-  { name: '餐饮', count: 45, amount: 4523.5, percentage: 18.4 },
-  { name: '交通', count: 32, amount: 2134.2, percentage: 8.7 },
-  { name: '购物', count: 28, amount: 3892.8, percentage: 15.8 },
-  { name: '居住', count: 8, amount: 8500.0, percentage: 34.6 },
-  { name: '娱乐', count: 15, amount: 1234.5, percentage: 5.0 },
-  { name: '医疗', count: 10, amount: 534.2, percentage: 2.2 },
-  { name: '教育', count: 12, amount: 1200.0, percentage: 4.9 },
-  { name: '通讯', count: 20, amount: 320.5, percentage: 1.3 },
-  { name: '其他', count: 18, amount: 2221.1, percentage: 9.1 }
-])
+const expenseBreakdownData = ref<{ name: string; count: number; amount: number; percentage: number }[]>([])
 
 // 收入类别明细
-const incomeBreakdownData = ref([
-  { name: '工资', count: 2, amount: 25000.0, percentage: 70.9 },
-  { name: '奖金', count: 1, amount: 5000.0, percentage: 14.2 },
-  { name: '投资收益', count: 3, amount: 2800.5, percentage: 7.9 },
-  { name: '兼职', count: 5, amount: 2000.0, percentage: 5.7 },
-  { name: '其他', count: 2, amount: 480.0, percentage: 1.3 }
-])
+const incomeBreakdownData = ref<{ name: string; count: number; amount: number; percentage: number }[]>([])
+
+// 计算百分比
+function calculatePercentages(data: { amount: number, percentage?: number }[]) {
+  const total = data.reduce((sum, item) => sum + item.amount, 0);
+  data.forEach((item) => {
+    item.percentage = total > 0 ? Math.round((item.amount / total) * 1000) / 10 : 0;
+  });
+}
 
 // 组件引用
 const expensePieRef = ref<InstanceType<typeof PieChartCard> | null>(null)
 const incomePieRef = ref<InstanceType<typeof PieChartCard> | null>(null)
 
-// TODO: 替换为真实API调用
 const fetchSummary = async (dateRange: DateRange) => {
-  // const result = await window.electronAPI.statisticsController.getIncomeExpenseSummary({
-  //   dateFrom: dateRange.start,
-  //   dateTo: dateRange.end
-  // })
-  // return result
-
-  // Mock数据
-  return {
-    incomeTotal: 35280.5,
-    expenseTotal: 24560.8,
-    balance: 10719.7,
-    totalCount: 128
+  const result = await window.statisticsController.getIncomeExpenseSummary({
+    dateFrom: dateRange.start,
+    dateTo: dateRange.end
+  })
+  if (result.code === 200) {
+    return result.data
   }
+  throw new Error(result.msg)
 }
 
-// TODO: 替换为真实API调用
 const fetchExpenseBreakdown = async (dateRange: DateRange) => {
-  // const result = await window.electronAPI.statisticsController.getBreakdownByCategoryOrSubcategory({
-  //   dateFrom: dateRange.start,
-  //   dateTo: dateRange.end,
-  //   type: '支出',
-  //   groupBy: 'category',
-  //   topN: 0
-  // })
-  // return result
-
-  // Mock数据
-  return expenseBreakdownData.value
+  const result = await window.statisticsController.getCategoryBreakdown({
+    dateFrom: dateRange.start,
+    dateTo: dateRange.end,
+    type: '支出',
+    groupBy: 'category',
+    topN: 0
+  })
+  if (result.code === 200) {
+    let finalResult = result.data?.map((item) => ({
+      name: item.name,
+      count: item.count,
+      amount: item.value,
+      percentage: 0
+    }))
+    return finalResult ? finalResult : []
+  }
+  throw new Error(result.msg)
 }
 
-// TODO: 替换为真实API调用
 const fetchIncomeBreakdown = async (dateRange: DateRange) => {
-  // const result = await window.electronAPI.statisticsController.getBreakdownByCategoryOrSubcategory({
-  //   dateFrom: dateRange.start,
-  //   dateTo: dateRange.end,
-  //   type: '收入',
-  //   groupBy: 'category',
-  //   topN: 0
-  // })
-  // return result
-
-  // Mock数据
-  return incomeBreakdownData.value
+  const result = await window.statisticsController.getCategoryBreakdown({
+    dateFrom: dateRange.start,
+    dateTo: dateRange.end,
+    type: '收入',
+    groupBy: 'category',
+    topN: 0
+  })
+  if (result.code === 200) {
+    return result.data?.map((item) => ({
+      name: item.name,
+      count: item.count,
+      amount: item.value,
+      percentage: 0
+    })) ?? []
+  }
+  throw new Error(result.msg)
 }
 
 async function loadSummary() {
-  const data = await fetchSummary(globalDateRange.value)
+  const data = await fetchSummary(globalDateRange.value) as IncomeExpenseSummaryDTO
   summaryData.incomeTotal = data.incomeTotal
   summaryData.expenseTotal = data.expenseTotal
   summaryData.balance = data.balance
@@ -213,8 +209,14 @@ async function loadSummary() {
 }
 
 async function loadBreakdowns() {
-  expenseBreakdownData.value = await fetchExpenseBreakdown(globalDateRange.value)
-  incomeBreakdownData.value = await fetchIncomeBreakdown(globalDateRange.value)
+  const [expenseData, incomeData] = await Promise.all([
+    fetchExpenseBreakdown(globalDateRange.value),
+    fetchIncomeBreakdown(globalDateRange.value)
+  ])
+  expenseBreakdownData.value = expenseData
+  incomeBreakdownData.value = incomeData
+  calculatePercentages(expenseBreakdownData.value)
+  calculatePercentages(incomeBreakdownData.value)
 }
 
 function handleGlobalDateChange(val: DateRange) {

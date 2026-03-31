@@ -30,4 +30,5 @@ function transToCurrentWay(offsetWay: { limit: number; offset: number }): { curr
     }
 }
 
-export {Page, transToOffsetWay, transToCurrentWay, Order}
+export type { Page, Order };
+export { transToOffsetWay, transToCurrentWay };

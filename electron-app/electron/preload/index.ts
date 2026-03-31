@@ -1,6 +1,6 @@
 import { ipcRenderer, contextBridge } from 'electron'
 import {Result} from "../../shared/domain/result";
-import {AccountView, AccountQuery, BillQuery, BillView, BillCategoryQuery} from "../../shared/domain/dto";
+import {AccountView, AccountQuery, BillQuery, BillView, BillCategoryQuery, StatisticsQuery, IncomeExpenseSummaryDTO, CategoryBreakdownDTO, AssetTrendPointDTO, MonthlyTrendPointDTO} from "../../shared/domain/dto";
 import {Page} from "../../shared/domain/page";
 import type { Account, Bill, BillCategory } from "../../shared/domain/do";
 
@@ -69,6 +69,21 @@ contextBridge.exposeInMainWorld('accountController', {
   },
   delete: (id: number): Promise<Result<void>> => {
     return ipcRenderer.invoke('account:delete', id)
+  }
+})
+
+contextBridge.exposeInMainWorld('statisticsController', {
+  getIncomeExpenseSummary: (query: StatisticsQuery): Promise<Result<IncomeExpenseSummaryDTO>> => {
+    return ipcRenderer.invoke('statistics:income-expense-summary', query)
+  },
+  getCategoryBreakdown: (query: StatisticsQuery): Promise<Result<CategoryBreakdownDTO[]>> => {
+    return ipcRenderer.invoke('statistics:category-breakdown', query)
+  },
+  getAssetTrend: (query: StatisticsQuery): Promise<Result<AssetTrendPointDTO[]>> => {
+    return ipcRenderer.invoke('statistics:asset-trend', query)
+  },
+  getMonthlyTrend: (query: StatisticsQuery): Promise<Result<MonthlyTrendPointDTO[]>> => {
+    return ipcRenderer.invoke('statistics:monthly-trend', query)
   }
 })
 

@@ -5,3 +5,4 @@
 import './billController'
 import './accountController'
 import './billCategoryController'
+import './staticsController'

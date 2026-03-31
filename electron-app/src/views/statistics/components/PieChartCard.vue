@@ -47,61 +47,27 @@ const router = useRouter()
 const groupBy = ref<'category' | 'subcategory'>('category')
 const chartData = ref<PieChartItem[]>([])
 
-// TODO: 替换为真实API调用
-const fetchBreakdown = async (dateRange: DateRange, type: string, group: string) => {
-  // const result = await window.electronAPI.statisticsController.getBreakdownByCategoryOrSubcategory({
-  //   dateFrom: dateRange.start,
-  //   dateTo: dateRange.end,
-  //   type,
-  //   groupBy: group,
-  //   topN: 0  // 返回全部数据，由前端过滤<5%的
-  // })
-  // return result
-
-  // Mock数据
-  const mockCategories = [
-    { name: '餐饮', value: 4523.5 },
-    { name: '交通', value: 2134.2 },
-    { name: '购物', value: 3892.8 },
-    { name: '娱乐', value: 1234.5 },
-    { name: '居住', value: 8500.0 },
-    { name: '医疗', value: 534.2 },
-    { name: '教育', value: 1200.0 },
-    { name: '通讯', value: 320.5 }
-  ]
-
-  const data = mockCategories.map((c) => ({
-    name: c.name,
-    value: c.value,
-    category: c.name
-  }))
-
-  return data
-}
-
-function processData(rawData: PieChartItem[]) {
-  const total = rawData.reduce((sum, item) => sum + item.value, 0)
-  const threshold = total * 0.05
-
-  const filtered = rawData.filter((item) => item.value >= threshold)
-  const others = rawData.filter((item) => item.value < threshold)
-
-  let result = filtered
-
-  if (others.length > 0) {
-    const othersTotal = others.reduce((sum, item) => sum + item.value, 0)
-    result = [
-      ...filtered,
-      { name: '其他', value: othersTotal, category: '其他' }
-    ]
+const fetchBreakdown = async (dateRange: DateRange, type: typeof props.type, group: typeof groupBy.value) => {
+  const result = await window.statisticsController.getCategoryBreakdown({
+    dateFrom: dateRange.start,
+    dateTo: dateRange.end,
+    type,
+    groupBy: group
+  })
+  if (result.code === 200) {
+    return result.data?.map((item) => ({
+      name: item.name,
+      value: item.value,
+      category: item.category || item.name,
+      subcategory: item.subcategory
+    }))
   }
-
-  return result
+  throw new Error(result.msg)
 }
 
 async function loadData() {
   const data = await fetchBreakdown(props.dateRange, props.type, groupBy.value)
-  chartData.value = processData(data)
+  chartData.value  = data as PieChartItem[]
 }
 
 function handleGroupByChange() {

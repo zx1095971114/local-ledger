@@ -54,50 +54,34 @@ const emit = defineEmits<{
 const granularity = ref<'year' | 'month' | 'day'>('month')
 const chartData = ref<LineChartPoint[]>([])
 
-// TODO: 替换为真实API调用
 const fetchAssetTrend = async (dateRange: DateRange, gran: string) => {
-  // const result = await window.electronAPI.statisticsController.getAssetTrendAllAccounts({
-  //   dateFrom: dateRange.start,
-  //   dateTo: dateRange.end,
-  //   granularity: gran
-  // })
-  // return result
-
-  // Mock数据：基于账单数据计算资产变化
-  const mockData: LineChartPoint[] = []
-  if (gran === 'year') {
-    for (let i = 4; i >= 0; i--) {
-      const year = new Date().getFullYear() - i
-      mockData.push({
-        xLabel: String(year),
-        y: Math.random() * 100000 + 50000
-      })
-    }
-  } else if (gran === 'month') {
-    const now = new Date()
-    for (let i = 11; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-      mockData.push({
-        xLabel: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
-        y: Math.random() * 100000 + 30000 + i * 2000
-      })
-    }
-  } else {
-    const now = new Date()
-    for (let i = 29; i >= 0; i--) {
-      const d = new Date(now)
-      d.setDate(d.getDate() - i)
-      mockData.push({
-        xLabel: String(d.getDate()).padStart(2, '0'),
-        y: Math.random() * 100000 + 20000 + (30 - i) * 500
-      })
-    }
+  const result = await window.statisticsController.getAssetTrend({
+    dateFrom: dateRange.start,
+    dateTo: dateRange.end,
+    granularity: gran as 'year' | 'month' | 'day'
+  })
+  if (result.code === 200) {
+    return result.data ?? []
   }
-  return mockData
+  throw new Error(result.msg)
+}
+
+function getGranularityByDateRange(dateRange: DateRange): 'year' | 'month' | 'day' {
+  const from = new Date(dateRange.start)
+  const to = new Date(dateRange.end)
+  const diffMs = to.getTime() - from.getTime()
+  const diffDays = diffMs / (1000 * 60 * 60 * 24)
+  const diffMonths = diffDays / 30
+
+  if (diffMonths >= 60) return 'year'
+  if (diffMonths >= 5) return 'month'
+  return 'day'
 }
 
 async function loadData() {
-  const data = await fetchAssetTrend(props.dateRange, granularity.value)
+  const autoGranularity = getGranularityByDateRange(props.dateRange)
+  const gran = granularity.value || autoGranularity
+  const data = await fetchAssetTrend(props.dateRange, gran)
   chartData.value = data
 }
 

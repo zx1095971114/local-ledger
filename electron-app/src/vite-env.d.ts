@@ -9,7 +9,7 @@ declare module '*.vue' {
 }
 
 import type { Result } from '../shared/domain/result'
-import {BillView, BillQuery, AccountView, AccountQuery, BillCategoryQuery} from "../shared/domain/dto";
+import {BillView, BillQuery, AccountView, AccountQuery, BillCategoryQuery, StatisticsQuery, IncomeExpenseSummaryDTO, CategoryBreakdownDTO, AssetTrendPointDTO, MonthlyTrendPointDTO} from "../shared/domain/dto";
 import type { Account, Bill, BillCategory } from "../shared/domain/do";
 
 interface BillController {
@@ -33,6 +33,13 @@ interface CategoryController {
   delete: (id: number) => Promise<Result<void>>
 }
 
+interface StatisticsController {
+  getIncomeExpenseSummary: (query: StatisticsQuery) => Promise<Result<IncomeExpenseSummaryDTO>>
+  getCategoryBreakdown: (query: StatisticsQuery) => Promise<Result<CategoryBreakdownDTO[]>>
+  getAssetTrend: (query: StatisticsQuery) => Promise<Result<AssetTrendPointDTO[]>>
+  getMonthlyTrend: (query: StatisticsQuery) => Promise<Result<MonthlyTrendPointDTO[]>>
+}
+
 declare global {
   interface Window {
     // expose in the `electron/preload/index.ts`
@@ -40,6 +47,7 @@ declare global {
     billController: BillController
     accountController: AccountController
     categoryController: CategoryController
+    statisticsController: StatisticsController
   }
 }
 

@@ -1,0 +1,19 @@
+---
+description: 前后端（渲染进程与主进程 / IPC、API）共用的传输与视图类型放在 shared/domain
+globs: "electron-app/**/*.{ts,vue}"
+---
+
+# 共享领域类型（`electron-app/shared`）
+
+## 约定
+
+- **跨边界形状**（IPC 载荷、HTTP 请求/响应体、与数据库字段对齐的列表行/表单 DTO）应定义在 `electron-app/shared/domain/` 下，而不是仅写在某个 `views/**/types.ts` 里。
+- **推荐落点**：
+  - `shared/domain/dto.ts` — 查询条件、**View** 后缀的列表行/展示模型（如 `BillView`、`AccountManageView`）等与前后端交互直接相关的类型。
+  - `shared/domain/do.ts` — 持久化实体/表结构对齐的 **DO**（如 `Bill`、`Account`）。
+- 页面目录下的 `types.ts` 仅保留**纯前端局部**类型（如 UI 聚合块 `AccountGroupBlock`、排序枚举），必要时 **re-export** `shared` 中的类型以缩短同目录内的 import 路径。
+
+## 参考
+
+- `electron-app/shared/domain/dto.ts` — `BillQuery`、`BillView`、`AccountManageView` 等。
+- 账户页：`src/views/accounts/types.ts` 从 `dto` 引入并 `export type { AccountManageView }`。

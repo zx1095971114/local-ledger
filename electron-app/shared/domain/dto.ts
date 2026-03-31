@@ -89,3 +89,55 @@ export interface BillCategoryQuery {
   type?: '收入' | '支出';
   level?: number;
 }
+
+// ============ 统计分析相关类型 ============
+
+/**
+ * 统计分析查询参数
+ */
+export interface StatisticsQuery {
+  dateFrom: string   // 'YYYY-MM-DD'
+  dateTo: string     // 'YYYY-MM-DD'
+  granularity?: 'year' | 'month' | 'day'
+  type?: '收入' | '支出'
+  groupBy?: 'category' | 'subcategory'
+  topN?: number
+}
+
+/**
+ * 收支汇总
+ */
+export interface IncomeExpenseSummaryDTO {
+  incomeTotal: number
+  expenseTotal: number
+  balance: number
+  totalCount: number
+}
+
+/**
+ * 类别分布（含笔数）
+ */
+export interface CategoryBreakdownDTO {
+  name: string
+  value: number     // 金额合计
+  count: number      // 笔数
+  category?: string  // subcategory 分组时返回所属大类
+  subcategory?: string
+}
+
+/**
+ * 资产趋势点
+ */
+export interface AssetTrendPointDTO {
+  xLabel: string
+  y: number
+}
+
+/**
+ * 月度收支趋势点
+ */
+export interface MonthlyTrendPointDTO {
+  xLabel: string
+  income: number
+  expense: number
+}
