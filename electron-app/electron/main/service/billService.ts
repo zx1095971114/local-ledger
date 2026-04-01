@@ -91,8 +91,7 @@ function findOrCreateCategory(
   if (cache.has(key)) return cache.get(key)!;
 
   const newCategory: BillCategory = { name, type, level, parent_id: parentId };
-  categoryDao.insert(newCategory);
-  const newId = newCategory.id!;
+  let newId = categoryDao.insert(newCategory) as number;
   cache.set(key, newId);
   return newId;
 }
@@ -100,10 +99,11 @@ function findOrCreateCategory(
 function findOrCreateAccount(name: string, cache: Map<AccountCacheKey, Account>): Account {
   if (cache.has(name)) return cache.get(name)!;
 
-  const newAccount: Account = { name, type: ACCOUNT_TYPE_DEFAULT, balance: 0, note: '', sort_order: 0 };
-  accountDao.insert(newAccount);
-  cache.set(name, newAccount);
-  return newAccount;
+  const newAccount = { name, type: ACCOUNT_TYPE_DEFAULT, balance: 0, note: '', sort_order: 0 };
+  let id = accountDao.insert(newAccount) as number;
+  const finalAccount = accountDao.getById(id)!;
+  cache.set(name, finalAccount);
+  return finalAccount;
 }
 
 function isEmpty(v: unknown): boolean {
@@ -171,7 +171,7 @@ function importSingleRow(
 
   // 查找或创建账户并扣除余额
   const account = findOrCreateAccount(accountName, accountCache);
-  account.balance -= amount;
+  account.balance = (account.balance ?? 0) - amount;
   accountDao.updateById(account);
 
   // 构建并插入账单

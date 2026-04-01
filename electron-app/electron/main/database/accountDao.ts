@@ -82,7 +82,7 @@ export function list(query: AccountQuery): Account[] {
     return db.prepare(listQuery).all(...params) as Account[];
 }
 
-export function insert(account: Account): void {
+export function insert(account: Account): number | bigint {
     const db = getDatabase();
     const explicitId = !!account.id;
     const stmt = db.prepare(explicitId ? insertStmtWithId : insertStmtAutoId);
@@ -92,6 +92,7 @@ export function insert(account: Account): void {
     if (result.changes < 1) {
         throw new Error("插入账户失败，请稍后重试");
     }
+    return result.lastInsertRowid
 }
 
 type AccountPatchKey = (typeof UPDATE_KEYS)[number];

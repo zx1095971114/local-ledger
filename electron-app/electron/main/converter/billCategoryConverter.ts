@@ -4,7 +4,7 @@ import type { BillCategoryView } from "../../../shared/domain/dto";
 /**
  * 将 BillCategory DO 转换为 BillCategoryView
  */
-export function toBillCategoryView(category: BillCategory): BillCategoryView {
+export function toBillCategoryView(category: BillCategory):  BillCategoryView{
   return {
     id: category.id ?? 0,
     name: category.name ?? '',

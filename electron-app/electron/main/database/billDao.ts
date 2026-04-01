@@ -29,8 +29,9 @@ const selectCountStmt = `
 export function insertBill(bill: Bill): number {
   const db = getDatabase();
   const insert = db.prepare(insertStmt);
+  const realDate = bill?.date ?? new Date();
   let result = insert.run(
-      bill.date.toISOString(),
+      realDate.toISOString(),
       bill.type,
       bill.amount,
       bill.category ?? null,
@@ -80,7 +81,7 @@ export function list(query: BillQuery): Page<Bill>{
   let isPage = !!(query.pageInfo?.isPage)
 
   if(isPage){
-    let mysqlPage = transToOffsetWay(query.pageInfo);
+    let mysqlPage = transToOffsetWay(query.pageInfo!);
     let listQuery = `${selectStmt}
     WHERE 1 = 1
     ${condition}

@@ -3,13 +3,14 @@ import { error, ok, Result } from "../../../shared/domain/result"
 import { BillCategoryQuery } from "../../../shared/domain/dto"
 import type { BillCategory } from "../../../shared/domain/do"
 import * as billCategoryService from "../service/billCategoryService"
+import {getErrorMessage} from "../utils/commonUtils";
 
 ipcMain.handle("category:list", (_event, query: BillCategoryQuery): Result<BillCategory[]> => {
     try {
         return ok("查询成功", billCategoryService.list(query || {}))
     } catch (e) {
         console.log("查询 category 失败", e)
-        return error(e?.message)
+        return error(getErrorMessage(e))
     }
 })
 
@@ -19,7 +20,7 @@ ipcMain.handle("category:create", (_event, category: BillCategory): Result<void>
         return ok("新增成功")
     } catch (e) {
         console.log("新增 category 失败", e)
-        return error(e?.message)
+        return error(getErrorMessage(e))
     }
 })
 
@@ -29,7 +30,7 @@ ipcMain.handle("category:update", (_event, category: BillCategory): Result<void>
         return ok("更新成功")
     } catch (e) {
         console.log("更新 category 失败", e)
-        return error(e?.message)
+        return error(getErrorMessage(e))
     }
 })
 
@@ -39,6 +40,6 @@ ipcMain.handle("category:delete", (_event, id: number): Result<void> => {
         return ok("删除成功")
     } catch (e) {
         console.log("删除 category 失败", e)
-        return error(e?.message)
+        return error(getErrorMessage(e))
     }
 })

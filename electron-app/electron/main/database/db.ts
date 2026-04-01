@@ -186,7 +186,7 @@ function initTables(database: Database): void {
   if (!tableExists(database, 'bill_category')) {
     database.exec(`
       CREATE TABLE bill_category (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id INTEGER PRIMARY KEY,
         name TEXT NOT NULL,
         parent_id INTEGER,
         type TEXT NOT NULL CHECK(type IN ('收入', '支出')),
@@ -220,7 +220,7 @@ function initTables(database: Database): void {
   if (!tableExists(database, 'account')) {
     database.exec(`
       CREATE TABLE account (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id INTEGER PRIMARY KEY,
         name TEXT NOT NULL,
         type TEXT NOT NULL DEFAULT '' ${ACCOUNT_TYPE_CHECK},
         icon TEXT,

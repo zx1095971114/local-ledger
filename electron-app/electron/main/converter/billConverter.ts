@@ -3,24 +3,34 @@ import type { BillView } from "../../../shared/domain/dto";
 import * as categoryDao from "../database/billCategoryDao"
 import * as accountDao from "../database/accountDao"
 import {toBillCategoryView} from "./billCategoryConverter";
+import {toAccountManageView} from "./accountConverter";
 
 /**
  * 将 Bill DO 转换为 BillView
  */
-export function toBillView(bill: Bill): BillView {
+export function toBillView(bill: Bill): BillView{
   let categoryView = null
   if(bill.category){
-    categoryView = toBillCategoryView(categoryDao.getById(bill.category));
+    let category = categoryDao.getById(bill.category);
+    if(category){
+      categoryView = toBillCategoryView(category);
+    }
   }
 
   let subcategoryView = null
   if(bill.subcategory){
-    subcategoryView = toBillCategoryView(categoryDao.getById(bill.subcategory));
+    let category = categoryDao.getById(bill.subcategory);
+    if(category){
+      subcategoryView = toBillCategoryView(category);
+    }
   }
 
-  let accountView = null
+  let account = null
   if(bill.account){
-    accountView = accountDao.getById(bill.account);
+    account = accountDao.getById(bill.account);
+    if(account){
+      account = toAccountManageView(account)
+    }
   }
 
   return {
@@ -30,7 +40,7 @@ export function toBillView(bill: Bill): BillView {
     amount: bill.amount ?? 0,
     category: categoryView,
     subcategory: subcategoryView,
-    account: accountView,
+    account: account,
     note: bill.note ?? null,
   };
 }

@@ -68,7 +68,7 @@ function updateChildrenLevel(parentId: number, parentLevel: number): void {
         const childLevel = parentLevel + 1;
         db.prepare(`UPDATE bill_category SET level = ? WHERE id = ?`).run(childLevel, child.id);
         // 递归更新子级的子级
-        updateChildrenLevel(child.id, childLevel);
+        updateChildrenLevel(child.id!, childLevel);
     }
 }
 
@@ -106,7 +106,7 @@ export function list(query: BillCategoryQuery): BillCategory[] {
     return db.prepare(listQuery).all(...params) as BillCategory[];
 }
 
-export function insert(category: BillCategory): void {
+export function insert(category: BillCategory): number | bigint {
     const db = getDatabase();
     const explicitId = !!category.id;
     const stmt = db.prepare(explicitId ? insertStmtWithId : insertStmtAutoId);
@@ -116,6 +116,7 @@ export function insert(category: BillCategory): void {
     if (result.changes < 1) {
         throw new Error("插入账单类别失败，请稍后重试");
     }
+    return result.lastInsertRowid
 }
 
 type BillCategoryPatchKey = (typeof UPDATE_KEYS)[number];
