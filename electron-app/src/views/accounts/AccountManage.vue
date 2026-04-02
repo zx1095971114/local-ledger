@@ -127,7 +127,7 @@ import AccountCategoryPanel from './components/AccountCategoryPanel.vue'
 import AccountFormDialog from './components/AccountFormDialog.vue'
 import { loadAccounts, createAccount, updateAccount, deleteAccount } from './accountStorage'
 import type { AccountView, AccountSortMode } from './types'
-import { ACCOUNT_TYPE_PRESETS, ACCOUNT_TYPE_DEFAULT } from '../../../shared/domain/consts'
+import { ACCOUNT_TYPE_PRESETS, ACCOUNT_TYPE_DEFAULT } from '../../../shared/utils/consts'
 import { formatMoney } from './utils/formatMoney'
 
 const router = useRouter()

@@ -3,7 +3,7 @@ import { join, dirname } from 'node:path';
 import { existsSync, mkdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { getConfig } from '../config/config';
-import { ACCOUNT_TYPE_PRESETS } from '../../../shared/domain/consts';
+import { ACCOUNT_TYPE_PRESETS, BILL_TYPE_CHECK } from '../../../shared/utils/consts';
 
 // 使用 createRequire 来导入 better-sqlite3，确保在 ES modules 环境中正确加载
 // 注意：修改 ACCOUNT_TYPE_PRESETS 常量时需考虑数据库已有 CHECK 约束的兼容性。
@@ -122,7 +122,7 @@ function initTables(database: Database): void {
       CREATE TABLE bill (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         date TEXT NOT NULL,
-        type TEXT NOT NULL CHECK(type IN ('收入', '支出')),
+        type TEXT NOT NULL ${BILL_TYPE_CHECK},
         amount REAL NOT NULL,
         category INTEGER,
         subcategory INTEGER,
@@ -189,7 +189,7 @@ function initTables(database: Database): void {
         id INTEGER PRIMARY KEY,
         name TEXT NOT NULL,
         parent_id INTEGER,
-        type TEXT NOT NULL CHECK(type IN ('收入', '支出')),
+        type TEXT NOT NULL ${BILL_TYPE_CHECK},
         level INTEGER NOT NULL DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (parent_id) REFERENCES bill_category(id) ON DELETE CASCADE

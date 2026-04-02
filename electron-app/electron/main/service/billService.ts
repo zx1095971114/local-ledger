@@ -10,7 +10,7 @@ import { getDatabase } from '../database/db';
 import type { BillQuery, BillView } from "../../../shared/domain/dto";
 import { Page } from "../../../shared/domain/page";
 import { toBillViewList } from '../converter/billConverter';
-import { ACCOUNT_TYPE_DEFAULT } from '../../../shared/domain/consts';
+import { ACCOUNT_TYPE_DEFAULT } from '../../../shared/utils/consts';
 
 export function list(query: BillQuery): Page<BillView> {
   const pageResult = billDao.list(query);
